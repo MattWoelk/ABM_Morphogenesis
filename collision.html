@@ -4,12 +4,20 @@
 <script src="http://d3js.org/d3.v2.min.js?2.9.7"></script>
 <script>
 
-var width = 960,
+var width = 920,
     height = 500;
 
-var nodes = d3.range(200).map(function() { return {radius: Math.random() * 12 + 4}; }),
-    root = nodes[0],
-    color = d3.scale.category10();
+var counter = -1;
+var color = d3.scale.category10();
+
+function makeColor() {
+  counter += 1;
+  return color(counter % 3);
+  //.style("fill", function(d, i) { console.log("entering"); return color(i % 3); });
+}
+
+var nodes = d3.range(200).map(function() { return {radius: Math.random() * 12 + 4, color: makeColor(), id : Math.random()}; }),
+    root = nodes[0];
 
 root.radius = 0;
 root.fixed = true;
@@ -27,29 +35,58 @@ var svg = d3.select("body").append("svg:svg")
     .attr("height", height);
 
 svg.selectAll("circle")
-    .data(nodes.slice(1))
+  .data(nodes.slice(1), function (d) { return d.id; })
   .enter().append("circle")
     .attr("r", function(d) { return d.radius; })
-    .style("fill", function(d, i) { return color(i % 3); });
+    .style("fill", function(d, i) { return d.color; });
 
 force.on("tick", function(e) {
   var q = d3.geom.quadtree(nodes),
       i = 0,
       n = nodes.length;
 
+
+  force.nodes(nodes);
+
+  force.start();
+
   while (++i < n) q.visit(collide(nodes[i]));
 
-  svg.selectAll("circle")
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; });
+  circs = svg.selectAll("circle")
+    .on("click", function(d, i) {
+      //console.log(this);
+      //console.log("d: " + d + ", i: " + i)
+      //console.log(d)
+      //remove this node from the nodes list
+      nodes.splice(i + 1, 1);
+    })
+    .data(nodes.slice(1), function (d) { return d.id; });
+
+  circs
+    .attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; });
+
+  circs.enter().append("circle")
+    .attr("r", function(d) { return d.radius; })
+    .style("fill", function(d, i) { console.log("entering"); return makeColor(); });
+
+  circs.exit().remove();
 });
 
-svg.on("mousemove", function() {
-  var p1 = d3.mouse(this);
-  root.px = p1[0];
-  root.py = p1[1];
-  force.resume();
-});
+//svg.on("mousemove", function() {
+//  var p1 = d3.mouse(this);
+//  root.px = p1[0];
+//  root.py = p1[1];
+//  force.resume();
+//});
+
+svg;
+
+function addnode() {
+  for (i in d3.range(9)) {
+    nodes.push( {radius: Math.random() * 12 + 4} );
+  }
+}
 
 function collide(node) {
   var r = node.radius + 16,
@@ -76,3 +113,4 @@ function collide(node) {
 }
 
 </script>
+<button id='zoomin' onclick='addnode()'>+</button>
