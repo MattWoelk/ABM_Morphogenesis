@@ -9,22 +9,24 @@ var width = 920,
 
 var counter = -1;
 var color = d3.scale.category10();
+var quantity = 5; // 200
 
 function makeColor() {
   counter += 1;
   return color(counter % 3);
-  //.style("fill", function(d, i) { console.log("entering"); return color(i % 3); });
 }
 
-var nodes = d3.range(200).map(function() { return {radius: Math.random() * 12 + 4, color: makeColor(), id : Math.random()}; }),
+var nodes = d3.range(quantity).map(function() { return {radius: Math.random() * 12 + 4, color: makeColor(), id : Math.random()}; }),
     root = nodes[0];
+
+console.log(nodes);
 
 root.radius = 0;
 root.fixed = true;
 
 var force = d3.layout.force()
     .gravity(0.05)
-    .charge(function(d, i) { return i ? 0 : -2000; })
+    .charge(function(d, i) { return i ? 0 : 0; }) // was: return i ? 0 : 2000;
     .nodes(nodes)
     .size([width, height]);
 
@@ -45,7 +47,6 @@ force.on("tick", function(e) {
       i = 0,
       n = nodes.length;
 
-
   force.nodes(nodes);
 
   force.start();
@@ -54,11 +55,20 @@ force.on("tick", function(e) {
 
   circs = svg.selectAll("circle")
     .on("click", function(d, i) {
-      //console.log(this);
-      //console.log("d: " + d + ", i: " + i)
-      //console.log(d)
       //remove this node from the nodes list
+      //var nod = nodes[i]; // This is a shallow copy, or no copy at all. bad.
+      n = nodes[i];
+      nod1 = {color: n.color, radius: n.radius/2, id: Math.random(), x: n.x + n.radius, y: n.y + n.radius, weight: n.weight};
+      nod2 = {color: n.color, radius: n.radius/2, id: Math.random(), x: n.x - n.radius, y: n.y - n.radius, weight: n.weight};
+      //console.log(n);
+      //console.log(nod1);
+      //console.log(nod2);
+
+      // get rid of the node, and replace it with two half-sized ones
       nodes.splice(i + 1, 1);
+      nodes.push(nod1);
+      nodes.push(nod2)
+      console.log(nodes);
     })
     .data(nodes.slice(1), function (d) { return d.id; });
 
@@ -67,8 +77,10 @@ force.on("tick", function(e) {
     .attr("cy", function(d) { return d.y; });
 
   circs.enter().append("circle")
+    .attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; })
     .attr("r", function(d) { return d.radius; })
-    .style("fill", function(d, i) { console.log("entering"); return makeColor(); });
+    .style("fill", function(d, i) { return makeColor(); });
 
   circs.exit().remove();
 });
@@ -80,11 +92,9 @@ force.on("tick", function(e) {
 //  force.resume();
 //});
 
-svg;
-
 function addnode() {
   for (i in d3.range(9)) {
-    nodes.push( {radius: Math.random() * 12 + 4} );
+    nodes.push( {radius: Math.random() * 12 + 4, id: Math.random(), color: makeColor()} );
   }
 }
 
@@ -98,11 +108,11 @@ function collide(node) {
     if (quad.point && (quad.point !== node)) {
       var x = node.x - quad.point.x,
           y = node.y - quad.point.y,
-          l = Math.sqrt(x * x + y * y),
+          l = Math.sqrt(x * x + y * y), // distance between x and y
           r = node.radius + quad.point.radius;
       if (l < r) {
         l = (l - r) / l * .5;
-        node.x -= x *= l;
+        node.x -= x *= l; // x *= l; node.x -= x
         node.y -= y *= l;
         quad.point.x += x;
         quad.point.y += y;

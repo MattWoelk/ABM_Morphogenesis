@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Force-Directed Layout (Multiple Foci)</title>
+    <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+    <script type="text/javascript" src="underscore.js"></script>
+    <link type="text/css" rel="stylesheet" href="voronoi.css"/>
+  </head>
+  <body>
+    <button id='zoomin' onclick='addnewnodetograph()'>+</button>
+    <button id='zoomin' onclick='stop()'>play/pause</button>
+    <script type="text/javascript">
+
+//TODO: clip the cells so that they look like circles when not near each other.
+//      get them to not bounce like mad men when they divide
+//      suppress warnings from voronoi, or make it happy some other way
+//      - better to make it happy, that way we can have a single cell looking good, too.
+//      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
+//      - maybe with some nice sliders or something.
+
+var w = 860,
+    h = 430,
+    fill = d3.scale.category10(),
+    nodes = [],
+    foci = {x: w/2, y: h/2};
+
+var vis = d3.select("body").append("svg:svg")
+    .attr("width", w)
+    .attr("height", h)
+    .attr("class", "PiYG");
+
+var force = d3.layout.force()
+    .nodes(nodes)
+    .links([])
+    .gravity(0.05)
+    .size([w, h]);
+
+force.on("tick", function(e) {
+  // Push nodes toward their designated focus.
+  var k = .1 * e.alpha;
+  nodes.forEach(function(o, i) {
+    o.y += (foci.y - o.y) * k;
+    o.x += (foci.x - o.x) * k;
+  });
+
+  vis.selectAll("path")
+    .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; }))
+      .map(function(d) { return "M" + d.join("L") + "Z"; }))
+      .filter(function(d) { return this.getAttribute("d") != d; })
+      .attr("d", function(d) { return d; });
+
+  vis.selectAll("circle.node")
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+});
+
+
+vis.selectAll("path")
+    .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
+  .enter().append("path")
+    .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+    .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
+
+var incrementer = -1
+
+var addnewnodetograph = function(){
+  if (toggle == 0){
+    nodes.push({ // push a new node at the location of the previous one
+      x: (incrementer === -1) ? foci.x : nodes[incrementer].x,
+      y: (incrementer === -1) ? foci.y : nodes[incrementer].y
+    }); //{id: ~~(Math.random())});
+
+    incrementer++;
+    force.start();
+
+    vis.selectAll("path")
+      .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
+      .enter().append("path")
+      .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+      .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
+
+    vis.selectAll("circle.node")
+        .data(nodes)
+      .enter().append("svg:circle")
+        .attr("class", "node")
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; })
+        .attr("r", 8)
+        .style("fill", function(d) { return fill(0); })
+        .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
+        .style("stroke-width", 1.5)
+        .call(force.drag);
+  }
+}
+
+toggle = 0
+var stop = function () {
+  if (toggle == 0) {
+    force.stop();
+    toggle = 1
+  }else{
+    force.start();
+    toggle = 0
+  }
+}
+
+setInterval(addnewnodetograph, 1000);
+
+
+
+    </script>
+  </body>
+</html>
