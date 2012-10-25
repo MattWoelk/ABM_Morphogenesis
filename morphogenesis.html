@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Force-Directed Layout (Multiple Foci)</title>
+    <title>Morphogenesis</title>
+    <meta charset="utf-8">
     <script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
     <script type="text/javascript" src="underscore.js"></script>
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
@@ -11,8 +12,7 @@
     <button id='zoomin' onclick='stop()'>play/pause</button>
     <script type="text/javascript">
 
-//TODO: clip the cells so that they look like circles when not near each other.
-//      get them to not bounce like mad men when they divide
+//TODO: get them to not bounce like mad men when they divide
 //      suppress warnings from voronoi, or make it happy some other way
 //      - better to make it happy, that way we can have a single cell looking good, too.
 //      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
@@ -23,6 +23,8 @@ var w = 860,
     fill = d3.scale.category10(),
     nodes = [],
     foci = {x: w/2, y: h/2};
+    cellradius = 19;
+    nucleusradius = 7;
 
 var vis = d3.select("body").append("svg:svg")
     .attr("width", w)
@@ -34,6 +36,8 @@ var force = d3.layout.force()
     .links([])
     .gravity(0.05)
     .size([w, h]);
+
+    var clips = vis.append("svg:clipPath");
 
 force.on("tick", function(e) {
   // Push nodes toward their designated focus.
@@ -50,8 +54,21 @@ force.on("tick", function(e) {
       .attr("d", function(d) { return d; });
 
   vis.selectAll("circle.node")
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; });
+    .attr("cx", function (d) { return d.x; })
+    .attr("cy", function (d) { return d.y; });
+
+  vis.selectAll(".clipper")
+    .remove(); // TODO: why do I have to delete them all in order to fix this ???
+
+  vis.selectAll(".clipper")
+      .data(nodes)
+    .enter().append("svg:clipPath")
+      .attr("id", function (d, i) { return "clip"+i; })
+      .attr("class", "clipper")
+      .append("svg:circle")
+        .attr('cx', function (d) { return d.x; })
+        .attr('cy', function (d) { return d.y; })
+        .attr('r', cellradius);
 });
 
 
@@ -73,10 +90,22 @@ var addnewnodetograph = function(){
     incrementer++;
     force.start();
 
+    clips.selectAll("clipPath")
+        .data(nodes)
+      .enter().append("svg:clipPath")
+        .attr("id", function (d, i) { return "clip"+i; })
+        .attr("class", "clipper")
+        .append("svg:circle")
+          .attr('cx', function (d) { return d.x; })
+          .attr('cy', function (d) { return d.y; })
+          .attr('r', cellradius);
+
     vis.selectAll("path")
       .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
       .enter().append("path")
+      .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
       .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+      .style("stroke", "#aaa")
       .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
 
     vis.selectAll("circle.node")
@@ -85,11 +114,12 @@ var addnewnodetograph = function(){
         .attr("class", "node")
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
-        .attr("r", 8)
+        .attr("r", nucleusradius)
         .style("fill", function(d) { return fill(0); })
         .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
         .style("stroke-width", 1.5)
         .call(force.drag);
+
   }
 }
 
