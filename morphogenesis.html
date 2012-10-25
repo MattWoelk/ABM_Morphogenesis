@@ -59,6 +59,7 @@ force.on("tick", function(e) {
 
   vis.selectAll(".clipper")
     .remove(); // TODO: why do I have to delete them all in order to fix this ???
+               //       why can't I just move around clipPaths ?
 
   vis.selectAll(".clipper")
       .data(nodes)
