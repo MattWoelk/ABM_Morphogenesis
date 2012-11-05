@@ -1,0 +1,8 @@
+EACH CELL MUST "KNOW" THE FOLLOWING:
+What the current "time" is
+- could be an actual time-keeping device
+- could be based on how much time it takes to build up a chemical
+- could be based on how much compression is in existence because of too many cells
+- could be based on size of the cell because each split makes them smaller (before gastrulation)
+What they currently are
+- could be stored in any number of ways. They are what they are.
