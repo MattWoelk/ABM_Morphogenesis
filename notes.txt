@@ -1,8 +1,34 @@
 EACH CELL MUST "KNOW" THE FOLLOWING:
-What the current "time" is
+
+What the current "time" is:
 - could be an actual time-keeping device
 - could be based on how much time it takes to build up a chemical
 - could be based on how much compression is in existence because of too many cells
 - could be based on size of the cell because each split makes them smaller (before gastrulation)
-What they currently are
+
+What they currently are:
 - could be stored in any number of ways. They are what they are.
+
+Who are beside them:
+- could be cell-to-cell communication
+
+How many of their kind there are:
+- could be morphogens
+
+A way to pass information:
+- could be waves of information
+- could be push and pull forces
+- could be gradients
+- could be morphogens
+- could be electrostatic
+
+What to turn into:
+- could be based on concentrations of chemicals
+- could be based on being squished or stretched
+
+1. What they know (I'm a thing! I'm beside a thang!)
+2. What they communicate (I'm this, you're that, ???)
+3. What that communication looks like overall (waves, gradients, etc.)
+
+One cell could be the "start everything that happens" cell by keeping one with a special state whenever they split.
+- That way we could have a master cell which would start waves and gradients and things.

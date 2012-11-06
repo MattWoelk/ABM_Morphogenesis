@@ -9,7 +9,7 @@
   </head>
   <body>
     <button id='zoomin' onclick='addnewnodetograph()'>+</button>
-    <button id='zoomin' onclick='stop()'>play/pause</button>
+    <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <script type="text/javascript">
 
 //TODO: get them to not bounce like mad men when they divide
@@ -23,7 +23,7 @@ var w = 860,
     fill = d3.scale.category10(),
     nodes = [],
     foci = {x: w/2, y: h/2};
-    cellradius = 19;
+    cellradius = 32; //32 for charge strength of -30, distance of 20, and gravity 0.05
     nucleusradius = 7;
 
 var vis = d3.select("body").append("svg:svg")
@@ -31,9 +31,17 @@ var vis = d3.select("body").append("svg:svg")
     .attr("height", h)
     .attr("class", "PiYG");
 
+//defaults: size 1×1
+//          friction 0.9
+//          distance 20
+//          charge strength -30
+//          gravity strength 0.1
+//          and theta parameter 0.8
 var force = d3.layout.force()
     .nodes(nodes)
+    //.linkDistance(0) // this affected nothing
     .links([])
+    .friction(0.85)
     .gravity(0.05)
     .size([w, h]);
 
@@ -41,11 +49,11 @@ var force = d3.layout.force()
 
 force.on("tick", function(e) {
   // Push nodes toward their designated focus.
-  var k = .1 * e.alpha;
-  nodes.forEach(function(o, i) {
-    o.y += (foci.y - o.y) * k;
-    o.x += (foci.x - o.x) * k;
-  });
+//  var k = .1 * e.alpha;
+//  nodes.forEach(function(o, i) {
+//    o.y += (foci.y - o.y) * k;
+//    o.x += (foci.x - o.x) * k;
+//  });
 
   vis.selectAll("path")
     .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; }))
@@ -83,9 +91,14 @@ var incrementer = -1
 
 var addnewnodetograph = function(){
   if (toggle == 0){
+    var rad = Math.random() * Math.PI * 2;
+    var xoffset = Math.cos(rad) * nucleusradius;
+    var yoffset = Math.sin(rad) * nucleusradius;
+
+    // spawn a new node nucleusradius away from the previous node in a random direction.
     nodes.push({ // push a new node at the location of the previous one
-      x: (incrementer === -1) ? foci.x : nodes[incrementer].x,
-      y: (incrementer === -1) ? foci.y : nodes[incrementer].y
+      x: (incrementer === -1) ? foci.x : nodes[incrementer].x + xoffset,
+      y: (incrementer === -1) ? foci.y : nodes[incrementer].y + yoffset
     }); //{id: ~~(Math.random())});
 
     incrementer++;
@@ -124,14 +137,16 @@ var addnewnodetograph = function(){
   }
 }
 
-toggle = 0
+toggle = false
 var stop = function () {
-  if (toggle == 0) {
+  if (toggle == false) {
     force.stop();
-    toggle = 1
+    toggle = true;
+    document.getElementById('plause').value = "play";
   }else{
     force.start();
-    toggle = 0
+    toggle = false;
+    document.getElementById('plause').value = "pause";
   }
 }
 
