@@ -8,8 +8,9 @@
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
   </head>
   <body>
-    <button id='zoomin' onclick='addnewnodetograph()'>+</button>
+    <input id='zoomin' type='button' onclick='addnewnodetograph()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
+    <input id='generating' type='button' style="width:9em" onclick='stop_gen()' value='stop generating' />
     <script type="text/javascript">
 
 //TODO: get them to not bounce like mad men when they divide
@@ -17,6 +18,13 @@
 //      - better to make it happy, that way we can have a single cell looking good, too.
 //      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
 //      - maybe with some nice sliders or something.
+
+var generating = false;
+var toggle = false;
+var startingQuantity = 22;
+
+document.getElementById('generating').value = generating ? 'stop generating' : 'start generating';
+document.getElementById('plause').value = toggle ? 'play' : 'pause';
 
 var w = 860,
     h = 430,
@@ -90,7 +98,7 @@ vis.selectAll("path")
 var incrementer = -1
 
 var addnewnodetograph = function(){
-  if (toggle == 0){
+  if (toggle === false){
     var rad = Math.random() * Math.PI * 2;
     var xoffset = Math.cos(rad) * nucleusradius;
     var yoffset = Math.sin(rad) * nucleusradius;
@@ -137,21 +145,37 @@ var addnewnodetograph = function(){
   }
 }
 
-toggle = false
+var addNodeIfGen = function () {
+  if (generating) { addnewnodetograph(); }
+}
+
+var stop_gen = function () {
+  if (generating === false) {
+    generating = true;
+    document.getElementById('generating').value = "stop generating";
+  }else{
+    generating = false;
+    document.getElementById('generating').value = "start generating";
+  }
+}
+
 var stop = function () {
-  if (toggle == false) {
-    force.stop();
+  if (toggle === false) {
     toggle = true;
+    force.stop();
     document.getElementById('plause').value = "play";
   }else{
-    force.start();
     toggle = false;
+    force.start();
     document.getElementById('plause').value = "pause";
   }
 }
 
-setInterval(addnewnodetograph, 1000);
+// set up interval of generation
+setInterval(addNodeIfGen, 1000);
 
+// set up the initial mass (mostly for testing)
+_.times(startingQuantity, addnewnodetograph);
 
 
     </script>
