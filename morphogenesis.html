@@ -8,7 +8,7 @@
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
   </head>
   <body>
-    <input id='zoomin' type='button' onclick='add_new_node_to_end_of_list()' value = '+' />
+    <input id='zoomin' type='button' onclick='split_all_nodes()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stop_gen()' value='stop generating' />
     <br />
@@ -24,10 +24,10 @@
 
 var generating = false;
 var toggle = false;
-var startingQuantity = 24;
+var startingQuantity = 1;
 var nbz = [];
 
-document.getElementById('generating').value = generating ? 'stop generating' : 'start generating';
+document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
 document.getElementById('plause').value = toggle ? 'play' : 'pause';
 
 var w = 860,
@@ -96,10 +96,10 @@ force.on("tick", function(e) {
     .attr("cx", function (d) { return d.x; })
     .attr("cy", function (d) { return d.y; });
 
+  // DELETE AND THEN ENTER clipping regions //
   vis.selectAll(".clipper")
     .remove(); // TODO: why do I have to delete them all in order to fix this ???
                //       why can't I just move around clipPaths ?
-
   vis.selectAll(".clipper")
       .data(nodes)
     .enter().append("svg:clipPath")
@@ -120,14 +120,7 @@ vis.selectAll("path")
 
 var incrementer = -1
 
-// split every node into two nodes
-var add_new_nodes_to_graph = function () {
-};
-
 var add_node = function (index_of_node_to_multiply) {
-};
-
-var add_new_node_to_end_of_list = function () {
   if (toggle === false){
     var rad = Math.random() * Math.PI * 2;
     var xoffset = Math.cos(rad) * nucleusradius;
@@ -135,16 +128,28 @@ var add_new_node_to_end_of_list = function () {
 
     // spawn a new node nucleusradius away from the previous node in a random direction.
     nodes.push({ // push a new node at the location of the previous one
-      x: (incrementer === -1) ? foci.x : nodes[incrementer].x + xoffset,
-      y: (incrementer === -1) ? foci.y : nodes[incrementer].y + yoffset
+      x: (incrementer === -1) ? foci.x : nodes[index_of_node_to_multiply].x + xoffset,
+      y: (incrementer === -1) ? foci.y : nodes[index_of_node_to_multiply].y + yoffset
     }); //{id: ~~(Math.random())});
 
     incrementer++;
     force.start();
-
-
   }
+};
+
+var add_new_node_to_end_of_list = function () {
+  add_node(incrementer);
 }
+
+// split every node into two nodes
+var split_all_nodes = function () {
+  //for every node, make a new node
+  var i = 0;
+  inc_now = incrementer + 1;
+  for (i = 0; i < inc_now; i++) {
+    add_node(i);
+  }
+};
 
 var addNodeIfGen = function () {
   if (generating) { add_new_node_to_end_of_list(); }
@@ -153,10 +158,10 @@ var addNodeIfGen = function () {
 var stop_gen = function () {
   if (generating === false) {
     generating = true;
-    document.getElementById('generating').value = "stop generating";
+    document.getElementById('generating').value = "stop simulation";
   }else{
     generating = false;
-    document.getElementById('generating').value = "start generating";
+    document.getElementById('generating').value = "start simulation";
   }
 }
 
