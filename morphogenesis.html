@@ -18,10 +18,12 @@
 //      - better to make it happy, that way we can have a single cell looking good, too.
 //      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
 //      - maybe with some nice sliders or something.
+//      Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
 
 var generating = false;
 var toggle = false;
-var startingQuantity = 22;
+var startingQuantity = 24;
+var nbz = [];
 
 document.getElementById('generating').value = generating ? 'stop generating' : 'start generating';
 document.getElementById('plause').value = toggle ? 'play' : 'pause';
@@ -127,20 +129,25 @@ var addnewnodetograph = function(){
       .enter().append("path")
       .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
       .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+      .on("mouseover", function (d, i) { return highlight_neighbours_including_self(d, i); })
       .style("stroke", "#aaa")
       .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
 
     vis.selectAll("circle.node")
         .data(nodes)
       .enter().append("svg:circle")
-        .attr("class", "node")
+      .attr("class", "node")
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; })
         .attr("r", nucleusradius)
-        .style("fill", function(d) { return fill(0); })
         .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
         .style("stroke-width", 1.5)
         .call(force.drag);
+
+    // UPDATE //
+    vis.selectAll("circle.node")
+        .style("fill", function(d,i) { return (nbz.indexOf(i) > -1) ? "#F0F" : "#0FF"; });
+
 
   }
 }
@@ -177,6 +184,28 @@ setInterval(addNodeIfGen, 1000);
 // set up the initial mass (mostly for testing)
 _.times(startingQuantity, addnewnodetograph);
 
+function highlight_neighbours_including_self  (node_of_interest, node_of_interest_index) {
+  var neighbours = generate_all_neighbours()[node_of_interest_index];
+  neighbours.push(node_of_interest_index);
+  vis.selectAll("circle.node")
+    .style("fill", function(d,i) {
+      if (i === node_of_interest_index) { return "#00F"; };
+      return (neighbours.indexOf(i) > -1) ? "#F0F" : "#0FF";
+    });
+}
+
+
+function highlight_neighbours (node_of_interest, node_of_interest_index) {
+  var neighbours = generate_all_neighbours()[node_of_interest_index];
+  vis.selectAll("circle.node")
+        .style("fill", function(d,i) { return (neighbours.indexOf(i) > -1) ? "#F0F" : "#0FF"; });
+}
+
+console.log("===Simulation Started===");
+
+function generate_all_neighbours () {
+  return d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }))
+}
 
     </script>
   </body>

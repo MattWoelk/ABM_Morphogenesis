@@ -10,7 +10,11 @@ path {
 }
 
 circle {
-  fill: #ccc;
+  fill: #1f77b4;
   stroke: #000;
   pointer-events: none;
+}
+
+circle selected {
+  fill: #4f77b4;
 }

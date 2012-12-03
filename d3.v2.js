@@ -6577,6 +6577,7 @@
     l: "r",
     r: "l"
   };
+
   d3.geom.delaunay = function(vertices) {
     var edges = vertices.map(function() {
       return [];
@@ -6598,6 +6599,28 @@
     });
     return triangles;
   };
+
+
+
+  // ADDED BY MATT WOELK
+  // This takes in an array of vertices
+  // This gives an array of arrays of indices which are
+  // neighbours of the array's index. Example:
+  // [ [ 1 , 2 ] , [ 0 , 2 ] , [ 1 , 0 ] ]
+  // 0 touches 1 and 2, 1 touches 0 and 2, 2 touches 1 and 0
+  d3.get_delaunay_neighbours = function(vertices){
+    var edges = vertices.map(function() {
+      return [];
+    });
+    d3_voronoi_tessellate(vertices, function(e) {
+      edges[e.region.l.index].push(e.region.r.index);
+      edges[e.region.r.index].push(e.region.l.index);
+    });
+    return edges;
+  };
+
+
+
   d3.geom.quadtree = function(points, x1, y1, x2, y2) {
     function insert(n, p, x1, y1, x2, y2) {
       if (isNaN(p.x) || isNaN(p.y)) return;
