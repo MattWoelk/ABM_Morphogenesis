@@ -8,7 +8,7 @@
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
   </head>
   <body>
-    <input id='zoomin' type='button' onclick='addnewnodetograph()' value = '+' />
+    <input id='zoomin' type='button' onclick='add_new_node_to_end_of_list()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stop_gen()' value='stop generating' />
     <br />
@@ -19,6 +19,8 @@
 //      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
 //      - maybe with some nice sliders or something.
 //      Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
+//      Make a better data structure for the nodes.
+//      - properties: color, neighbours, maybe other things
 
 var generating = false;
 var toggle = false;
@@ -58,19 +60,38 @@ var force = d3.layout.force()
     var clips = vis.append("svg:clipPath");
 
 force.on("tick", function(e) {
-  // Push nodes toward their designated focus.
-//  var k = .1 * e.alpha;
-//  nodes.forEach(function(o, i) {
-//    o.y += (foci.y - o.y) * k;
-//    o.x += (foci.x - o.x) * k;
-//  });
+  // ENTER voronoi //
+  vis.selectAll("path")
+    .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
+    .enter().append("path")
+    .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
+    .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+    .on("mouseover", function (d, i) { return highlight_neighbours_including_self(d, i); })
+    .on("click", function (d, i) { return cloock(i); })
+    .style("stroke", "#aaa")
+    .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
 
+  // UPDATE voronoi //
   vis.selectAll("path")
     .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; }))
       .map(function(d) { return "M" + d.join("L") + "Z"; }))
       .filter(function(d) { return this.getAttribute("d") != d; })
       .attr("d", function(d) { return d; });
 
+  // ENTER circles //
+  vis.selectAll("circle.node")
+      .data(nodes)
+    .enter().append("svg:circle")
+    .attr("class", "node")
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; })
+      .attr("r", nucleusradius)
+      .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
+      .style("stroke-width", 1.5)
+      .style("fill", "#2E89FF")
+      .call(force.drag);
+
+  // UPDATE circles //
   vis.selectAll("circle.node")
     .attr("cx", function (d) { return d.x; })
     .attr("cy", function (d) { return d.y; });
@@ -99,7 +120,14 @@ vis.selectAll("path")
 
 var incrementer = -1
 
-var addnewnodetograph = function(){
+// split every node into two nodes
+var add_new_nodes_to_graph = function () {
+};
+
+var add_node = function (index_of_node_to_multiply) {
+};
+
+var add_new_node_to_end_of_list = function () {
   if (toggle === false){
     var rad = Math.random() * Math.PI * 2;
     var xoffset = Math.cos(rad) * nucleusradius;
@@ -114,46 +142,12 @@ var addnewnodetograph = function(){
     incrementer++;
     force.start();
 
-    clips.selectAll("clipPath")
-        .data(nodes)
-      .enter().append("svg:clipPath")
-        .attr("id", function (d, i) { return "clip"+i; })
-        .attr("class", "clipper")
-        .append("svg:circle")
-          .attr('cx', function (d) { return d.x; })
-          .attr('cy', function (d) { return d.y; })
-          .attr('r', cellradius);
-
-    vis.selectAll("path")
-      .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
-      .enter().append("path")
-      .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
-      .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
-      .on("mouseover", function (d, i) { return highlight_neighbours_including_self(d, i); })
-      .style("stroke", "#aaa")
-      .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
-
-    vis.selectAll("circle.node")
-        .data(nodes)
-      .enter().append("svg:circle")
-      .attr("class", "node")
-        .attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        .attr("r", nucleusradius)
-        .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
-        .style("stroke-width", 1.5)
-        .call(force.drag);
-
-    // UPDATE //
-    vis.selectAll("circle.node")
-        .style("fill", function(d,i) { return (nbz.indexOf(i) > -1) ? "#F0F" : "#0FF"; });
-
 
   }
 }
 
 var addNodeIfGen = function () {
-  if (generating) { addnewnodetograph(); }
+  if (generating) { add_new_node_to_end_of_list(); }
 }
 
 var stop_gen = function () {
@@ -182,15 +176,15 @@ var stop = function () {
 setInterval(addNodeIfGen, 1000);
 
 // set up the initial mass (mostly for testing)
-_.times(startingQuantity, addnewnodetograph);
+_.times(startingQuantity, add_new_node_to_end_of_list);
 
 function highlight_neighbours_including_self  (node_of_interest, node_of_interest_index) {
   var neighbours = generate_all_neighbours()[node_of_interest_index];
   neighbours.push(node_of_interest_index);
   vis.selectAll("circle.node")
     .style("fill", function(d,i) {
-      if (i === node_of_interest_index) { return "#00F"; };
-      return (neighbours.indexOf(i) > -1) ? "#F0F" : "#0FF";
+      if (i === node_of_interest_index) { return "#CB2EFF"; };
+      return (neighbours.indexOf(i) > -1) ? "#0DE" : "#2E89FF";
     });
 }
 
@@ -205,6 +199,10 @@ console.log("===Simulation Started===");
 
 function generate_all_neighbours () {
   return d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }))
+}
+
+function cloock (index) {
+  console.log("cloock: " + index);
 }
 
     </script>
