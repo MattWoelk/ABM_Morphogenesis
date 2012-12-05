@@ -11,6 +11,13 @@
     <input id='zoomin' type='button' onclick='split_all_nodes()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stop_gen()' value='stop generating' />
+
+    <ul id="casting">
+      Casting:
+      <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
+      <li><label><input type="radio" name="casting" value="mono" checked="checked" />Mono Cast</li>
+    </ul>
+
     <br />
     <script type="text/javascript">
 
@@ -23,12 +30,12 @@
 //      - properties: color, neighbours, maybe other things
 
 var generating = false;
-var toggle = false;
+var paused = false;
 var startingQuantity = 6;
 var nbz = [];
 
 document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
-document.getElementById('plause').value = toggle ? 'play' : 'pause';
+document.getElementById('plause').value = paused ? 'play' : 'pause';
 
 var w = 860,
     h = 430,
@@ -88,13 +95,14 @@ force.on("tick", function(e) {
       .attr("r", nucleusradius)
       .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
       .style("stroke-width", 1.5)
-      .style("fill", "#2E89FF")
+      .style("fill", function(d) { d.color = "#2E89FF"; return d.color; })
       .call(force.drag);
 
   // UPDATE circles //
   vis.selectAll("circle.node")
     .attr("cx", function (d) { return d.x; })
-    .attr("cy", function (d) { return d.y; });
+    .attr("cy", function (d) { return d.y; })
+    .attr("fill", function (d) { return d.color; });
 
   // DELETE AND THEN ENTER clipping regions //
   vis.selectAll(".clipper")
@@ -121,7 +129,7 @@ vis.selectAll("path")
 var incrementer = -1
 
 var add_node = function (index_of_node_to_multiply) {
-  if (toggle === false){
+  if (paused === false){
     var rad = Math.random() * Math.PI * 2;
     var xoffset = Math.cos(rad) * nucleusradius;
     var yoffset = Math.sin(rad) * nucleusradius;
@@ -129,7 +137,8 @@ var add_node = function (index_of_node_to_multiply) {
     // spawn a new node nucleusradius away from the previous node in a random direction.
     nodes.push({ // push a new node at the location of the previous one
       x: (incrementer === -1) ? foci.x : nodes[index_of_node_to_multiply].x + xoffset,
-      y: (incrementer === -1) ? foci.y : nodes[index_of_node_to_multiply].y + yoffset
+      y: (incrementer === -1) ? foci.y : nodes[index_of_node_to_multiply].y + yoffset,
+      color: "#2E89FF",
     }); //{id: ~~(Math.random())});
 
     incrementer++;
@@ -166,12 +175,12 @@ var stop_gen = function () {
 }
 
 var stop = function () {
-  if (toggle === false) {
-    toggle = true;
+  if (paused === false) {
+    paused = true;
     force.stop();
     document.getElementById('plause').value = "play";
   }else{
-    toggle = false;
+    paused = false;
     force.start();
     document.getElementById('plause').value = "pause";
   }
@@ -182,10 +191,13 @@ setInterval(addNodeIfGen, 1000);
 
 function highlight_self (node_of_interest_index) {
   vis.selectAll("circle.node")
-    .style("fill", function(d,i) {
-      if (i === node_of_interest_index) { return "#CB2EFF"; }
-      else { return "#2E89FF"; }
-    });
+    //.transition().duration(500)
+      .style("fill", function(d,i) {
+        if (i === node_of_interest_index) { d.color = "#CB2EFF"; return d.color; }
+        else { return d.color; }
+      })
+      //.attr("r", function (d, i) { return (i === node_of_interest_index) ? nucleusradius * 2 : nucleusradius})
+      ;//.each("end", function () { d3.select(this).transition().duration(500).attr("r", nucleusradius); });
 }
 
 function highlight_neighbours_including_self  (node_of_interest_index) {
@@ -193,8 +205,9 @@ function highlight_neighbours_including_self  (node_of_interest_index) {
   neighbours.push(node_of_interest_index);
   vis.selectAll("circle.node")
     .style("fill", function(d,i) {
-      if (i === node_of_interest_index) { return "#CB2EFF"; };
-      return (neighbours.indexOf(i) > -1) ? "#0DE" : "#2E89FF";
+      if (i === node_of_interest_index) { d.color = "#CB2EFF"; return d.color; };
+      d.color = (neighbours.indexOf(i) > -1) ? "#0DE" : "#2E89FF";
+      return d.color;
     });
 }
 
@@ -212,15 +225,34 @@ function generate_all_neighbours () {
 }
 
 function cloock (index) {
-  propagate_one_to_one(index);
+  var b = document.querySelector("#casting input:checked").value;
+  if (b.localeCompare("mono") === 0) {
+    propagate_one_to_one(index);
+  } else {
+    propagate_one_to_all(index);
+  }
+}
+
+function propagate_one_to_all (index) {
+  console.log("proping: " + index);
+  neighbours = generate_all_neighbours()[index];
+  neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
+
+  if (!paused && neighbours.length > 0) {
+    _.forEach(neighbours, function (d,i) {
+      highlight_self(d);
+      setTimeout(propagate_one_to_all, 1000, d);
+    });
+  }
 }
 
 function propagate_one_to_one (index) {
   console.log("proping: " + index);
   neighbours = generate_all_neighbours()[index];
+  neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
   rndm = _.random(0, neighbours.length - 1);
-  highlight_self(neighbours[rndm]);
-  if (!toggle) {
+  if (!paused && neighbours.length > 0) {
+    highlight_self(neighbours[rndm]);
     setTimeout(propagate_one_to_one, 1000, [neighbours[rndm]]);
   }
 }
