@@ -18,3 +18,9 @@ circle {
 circle selected {
   fill: #4f77b4;
 }
+
+.first {
+  fill: black;
+  stroke: black;
+}
+
