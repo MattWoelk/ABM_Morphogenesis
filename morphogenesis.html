@@ -21,13 +21,23 @@
     <br />
     <script type="text/javascript">
 
-//TODO: suppress warnings from voronoi, or make it happy some other way
-//      - better to make it happy, that way we can have a single cell looking good, too.
+//TODO:
 //      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
 //      - maybe with some nice sliders or something.
 //      Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
-//      Make a better data structure for the nodes.
-//      - properties: color, neighbours, maybe other things
+
+//      Implement the following:
+//      Cell differentiation: These are the options we see in nature
+//      1. Symmetric cell division --> two identical cells
+//      2. Asymmetric cell division --> two daughter cells of different types (also different from the mother cell)
+//      3. Stem cell asymmetric division --> one daughter like the mother, the other different
+//      4. No cell division --> mysterious process called "induction". Changes the cell to a new type
+
+//      1. A -> A, A [done]
+//      2. A -> B, C []
+//      3. A -> A, B [done]
+//      4. A -> B    [done]
+
 
 var generating = false;
 var paused = false;
