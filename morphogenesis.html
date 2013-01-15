@@ -14,8 +14,8 @@
 
     <ul id="casting">
       Casting:
-      <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
-      <li><label><input type="radio" name="casting" value="mono" checked="checked" />Mono Cast</li>
+      <li><label><input type="radio" name="casting" value="multi" checked="checked"/>Multi Cast</li>
+      <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
     </ul>
 
     <br />
@@ -244,7 +244,7 @@ function cloock (index) {
 }
 
 function propagate_one_to_all (index) {
-  console.log("proping: " + index);
+  //console.log("proping: " + index);
   neighbours = generate_all_neighbours()[index];
   neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
 
@@ -257,7 +257,7 @@ function propagate_one_to_all (index) {
 }
 
 function propagate_one_to_one (index) {
-  console.log("proping: " + index);
+  //console.log("proping: " + index);
   neighbours = generate_all_neighbours()[index];
   neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
   rndm = _.random(0, neighbours.length - 1);
