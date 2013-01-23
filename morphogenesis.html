@@ -6,11 +6,12 @@
     <script type="text/javascript" src="d3.v3.js"></script>
     <script type="text/javascript" src="underscore.js"></script>
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
+    <!--:syn sync fromstart-->
   </head>
   <body>
-    <input id='zoomin' type='button' onclick='split_all_nodes()' value = '+' />
+    <input id='zoomin' type='button' onclick='splitAllNodes()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
-    <input id='generating' type='button' style="width:9em" onclick='stop_gen()' value='stop generating' />
+    <input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />
 
     <ul id="casting">
       Casting:
@@ -22,9 +23,15 @@
     <script type="text/javascript">
 
 //TODO:
-//      add the ability to zoom in on the plot, or change the size of the nucleus or cells.
-//      - maybe with some nice sliders or something.
+//      Detect edges (<5 neighbours)
+//      Start a random walk until getting to an edge cell.
+//      Create head nodes at that location.
+//      - which have gravity to each-other, but mesh with everything else.
+//      - also, they should look different.
 //      Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
+
+//      Allow nodes to choose their state depending on the state of their neighbours.
+//      - make this easy to work with a nice architecture.
 
 //      Implement the following:
 //      Cell differentiation: These are the options we see in nature
@@ -50,7 +57,7 @@ document.getElementById('plause').value = paused ? 'play' : 'pause';
 var w = 860,
     h = 430,
     fill = d3.scale.category10(),
-    nodes = [],
+    nodes = [], // this is treated like a global variable
     foci = {x: w/2, y: h/2};
     cellradius = 32; //32 for charge strength of -30, distance of 20, and gravity 0.05
     nucleusradius = 7;
@@ -76,6 +83,9 @@ var force = d3.layout.force()
 
     var clips = vis.append("svg:clipPath");
 
+
+//// TICK ////
+
 force.on("tick", function(e) {
   // ENTER voronoi //
   vis.selectAll("path")
@@ -83,7 +93,7 @@ force.on("tick", function(e) {
     .enter().append("path")
     .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
     .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
-    .on("mouseover", function (d, i) { return highlight_neighbours_including_self(i); })
+    .on("mouseover", function (d, i) { return highlightNeighboursIncludingSlef(i); })
     .on("click", function (d, i) { return cloock(i); })
     .style("stroke", "#aaa")
     .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
@@ -130,6 +140,8 @@ force.on("tick", function(e) {
 });
 
 
+//// INITIAL SETUP ////
+
 vis.selectAll("path")
     .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
   .enter().append("path")
@@ -138,43 +150,24 @@ vis.selectAll("path")
 
 var incrementer = -1
 
-var add_node = function (index_of_node_to_multiply) {
-  if (paused === false){
-    var rad = Math.random() * Math.PI * 2;
-    var xoffset = Math.cos(rad) * nucleusradius;
-    var yoffset = Math.sin(rad) * nucleusradius;
+// set up interval of generation
+setInterval(addNodeIfGen, 1000);
 
-    // spawn a new node nucleusradius away from the previous node in a random direction.
-    nodes.push({ // push a new node at the location of the previous one
-      x: (incrementer === -1) ? foci.x : nodes[index_of_node_to_multiply].x + xoffset,
-      y: (incrementer === -1) ? foci.y : nodes[index_of_node_to_multiply].y + yoffset,
-      color: "#2E89FF",
-    }); //{id: ~~(Math.random())});
+console.log("===Simulation Started===");
 
-    incrementer++;
-    force.start();
+
+//// INTERFACE ////
+
+function cloock (index) {
+  var b = document.querySelector("#casting input:checked").value;
+  if (b.localeCompare("mono") === 0) {
+    propagateOneToOne(index);
+  } else {
+    propagateOneToAll(index);
   }
-};
-
-var add_new_node_to_end_of_list = function () {
-  add_node(incrementer);
 }
 
-// split every node into two nodes
-var split_all_nodes = function () {
-  //for every node, make a new node
-  var i = 0;
-  inc_now = incrementer + 1;
-  for (i = 0; i < inc_now; i++) {
-    add_node(i);
-  }
-};
-
-var addNodeIfGen = function () {
-  if (generating) { add_new_node_to_end_of_list(); }
-}
-
-var stop_gen = function () {
+var stopGen = function () {
   if (generating === false) {
     generating = true;
     document.getElementById('generating').value = "stop simulation";
@@ -196,80 +189,125 @@ var stop = function () {
   }
 }
 
-// set up interval of generation
-setInterval(addNodeIfGen, 1000);
 
-function highlight_self (node_of_interest_index) {
+//// CHANGING STATE ////
+
+function highlightSelf (nodeOfInterestIndex) {
   vis.selectAll("circle.node")
     //.transition().duration(500)
       .style("fill", function(d,i) {
-        if (i === node_of_interest_index) { d.color = "#CB2EFF"; return d.color; }
+        if (i === nodeOfInterestIndex) { d.color = "#CB2EFF"; return d.color; }
         else { return d.color; }
       })
-      //.attr("r", function (d, i) { return (i === node_of_interest_index) ? nucleusradius * 2 : nucleusradius})
+      //.attr("r", function (d, i) { return (i === nodeOfInterestIndex) ? nucleusradius * 2 : nucleusradius})
       ;//.each("end", function () { d3.select(this).transition().duration(500).attr("r", nucleusradius); });
 }
 
-function highlight_neighbours_including_self  (node_of_interest_index) {
-  var neighbours = generate_all_neighbours()[node_of_interest_index];
-  neighbours.push(node_of_interest_index);
+function highlightNeighboursIncludingSlef  (nodeOfInterestIndex) {
+  var neighbours = generateAllNeighbours()[nodeOfInterestIndex];
+  neighbours.push(nodeOfInterestIndex);
   vis.selectAll("circle.node")
     .style("fill", function(d,i) {
-      if (i === node_of_interest_index) { d.color = "#CB2EFF"; return d.color; };
+      if (i === nodeOfInterestIndex) { d.color = "#CB2EFF"; return d.color; };
       d.color = (neighbours.indexOf(i) > -1) ? "#0DE" : "#2E89FF";
       return d.color;
     });
 }
 
-
-function highlight_neighbours (node_of_interest, node_of_interest_index) {
-  var neighbours = generate_all_neighbours()[node_of_interest_index];
+function highlightNeighbours (nodeOfInterest, nodeOfInterestIndex) {
+  var neighbours = generateAllNeighbours()[nodeOfInterestIndex];
   vis.selectAll("circle.node")
         .style("fill", function(d,i) { return (neighbours.indexOf(i) > -1) ? "#F0F" : "#0FF"; });
 }
 
-console.log("===Simulation Started===");
 
-function generate_all_neighbours () {
-  return d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }))
-}
+//// PROPAGATING ////
 
-function cloock (index) {
-  var b = document.querySelector("#casting input:checked").value;
-  if (b.localeCompare("mono") === 0) {
-    propagate_one_to_one(index);
-  } else {
-    propagate_one_to_all(index);
-  }
-}
-
-function propagate_one_to_all (index) {
+function propagateOneToAll (index) {
   //console.log("proping: " + index);
-  neighbours = generate_all_neighbours()[index];
+  neighbours = generateAllNeighbours()[index];
   neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
 
   if (!paused && neighbours.length > 0) {
     _.forEach(neighbours, function (d,i) {
-      highlight_self(d);
-      setTimeout(propagate_one_to_all, 1000, d);
+      highlightSelf(d);
+      setTimeout(propagateOneToAll, 1000, d);
     });
   }
 }
 
-function propagate_one_to_one (index) {
+function propagateOneToOne (index) {
   //console.log("proping: " + index);
-  neighbours = generate_all_neighbours()[index];
+  neighbours = generateAllNeighbours()[index];
   neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
   rndm = _.random(0, neighbours.length - 1);
   if (!paused && neighbours.length > 0) {
-    highlight_self(neighbours[rndm]);
-    setTimeout(propagate_one_to_one, 1000, [neighbours[rndm]]);
+    highlightSelf(neighbours[rndm]);
+    setTimeout(propagateOneToOne, 1000, [neighbours[rndm]]);
   }
 }
 
+
+//// ADDING AND REMOVING NODES ////
+
+var addNode = function (indexOfNodeToMultiply) {
+  if (paused === false){
+    var rad = Math.random() * Math.PI * 2;
+    var xoffset = Math.cos(rad) * nucleusradius;
+    var yoffset = Math.sin(rad) * nucleusradius;
+
+    // spawn a new node nucleusradius away from the previous node in a random direction.
+    nodes.push({ // push a new node at the location of the previous one
+      x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
+      y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
+      color: "#2E89FF",
+    }); //{id: ~~(Math.random())});
+
+    incrementer++;
+    force.start();
+  }
+};
+
+var addNewNodeToEndOfList = function () {
+  addNode(incrementer);
+}
+
+var splitAllNodes = function () {
+  // split every node into two nodes
+  var i = 0;
+  incNow = incrementer + 1;
+
+  //for every node, make a new node
+  for (i = 0; i < incNow; i++) {
+    addNode(i);
+  }
+};
+
+var addNodeIfGen = function () {
+  if (generating) { addNewNodeToEndOfList(); }
+}
+
+
+//// HELPER METHODS ////
+
+function generateAllNeighbours () {
+  return d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }))
+}
+
+function countNeighbours (index) {
+  return generateAllNeighbours()[index].length;
+}
+
+function checkIfEdge (index) {
+  //Not a perfect method, but it will do for our purposes:
+  // We know that only edge cases can have less than 5 neighbours,
+  // but some have more.
+  return countNeighbours(index) < 5;
+}
+
 // set up the initial mass (mostly for testing)
-_.times(1, add_new_node_to_end_of_list);
-_.times(startingQuantity, split_all_nodes);
+_.times(1, addNewNodeToEndOfList);
+_.times(startingQuantity, splitAllNodes);
 
     </script>
   </body>
