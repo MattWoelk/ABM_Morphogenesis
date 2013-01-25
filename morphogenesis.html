@@ -17,13 +17,13 @@
       Casting:
       <li><label><input type="radio" name="casting" value="multi" checked="checked"/>Multi Cast</li>
       <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
+      <li><label><input type="radio" name="casting" value="monoToEdge"/>Random Walk Until Reaching An Edge Cell</li>
     </ul>
 
     <br />
     <script type="text/javascript">
 
 //TODO:
-//      Detect edges (<5 neighbours)
 //      Start a random walk until getting to an edge cell.
 //      Create head nodes at that location.
 //      - which have gravity to each-other, but mesh with everything else.
@@ -162,8 +162,12 @@ function cloock (index) {
   var b = document.querySelector("#casting input:checked").value;
   if (b.localeCompare("mono") === 0) {
     propagateOneToOne(index);
-  } else {
+  } else if (b.localeCompare("multi") === 0){
     propagateOneToAll(index);
+  } else if (b.localeCompare("monoToEdge") === 0){
+    propagateMonoToEdge(index);
+  } else {
+    console.log("UNIMPLEMENTED")
   }
 }
 
@@ -192,11 +196,13 @@ var stop = function () {
 
 //// CHANGING STATE ////
 
-function highlightSelf (nodeOfInterestIndex) {
+function highlightSelf (nodeOfInterestIndex, col) {
+  console.log("COLORING: " + col + ", " + nodeOfInterestIndex);
   vis.selectAll("circle.node")
     //.transition().duration(500)
       .style("fill", function(d,i) {
-        if (i === nodeOfInterestIndex) { d.color = "#CB2EFF"; return d.color; }
+        console.log("i: " + i);
+        if (i === nodeOfInterestIndex) { console.log("COLORED: " + col); d.color = col; return d.color; }
         else { return d.color; }
       })
       //.attr("r", function (d, i) { return (i === nodeOfInterestIndex) ? nucleusradius * 2 : nucleusradius})
@@ -230,7 +236,7 @@ function propagateOneToAll (index) {
 
   if (!paused && neighbours.length > 0) {
     _.forEach(neighbours, function (d,i) {
-      highlightSelf(d);
+      highlightSelf(d, "#CB2EFF");
       setTimeout(propagateOneToAll, 1000, d);
     });
   }
@@ -242,8 +248,22 @@ function propagateOneToOne (index) {
   neighbours = _.filter(neighbours, function (d) { return nodes[d].color.localeCompare("#CB2EFF") !== 0; });
   rndm = _.random(0, neighbours.length - 1);
   if (!paused && neighbours.length > 0) {
-    highlightSelf(neighbours[rndm]);
+    highlightSelf(neighbours[rndm], "#CB2EFF");
     setTimeout(propagateOneToOne, 1000, [neighbours[rndm]]);
+  }
+}
+
+function propagateMonoToEdge (index) {
+  //console.log("proping: " + index);
+  neighbours = generateAllNeighbours()[index];
+  rndm = _.random(0, neighbours.length - 1);
+  if (checkIfEdge(index)) {
+    console.log("DONE");
+    highlightSelf(index, "#FFFFFF");
+  } else if (!paused && neighbours.length > 0) {
+    highlightSelf(neighbours[rndm], "#CB2EFF");
+    //highlightSelf(neighbours[rndm], "#FFFFFF");
+    setTimeout(propagateMonoToEdge, 1000, [neighbours[rndm]]);
   }
 }
 
