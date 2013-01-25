@@ -24,8 +24,7 @@
     <script type="text/javascript">
 
 //TODO:
-//      Start a random walk until getting to an edge cell.
-//      Create head nodes at that location.
+//      Create head nodes at the first encountered edge cell's location.
 //      - which have gravity to each-other, but mesh with everything else.
 //      - also, they should look different.
 //      Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
@@ -197,12 +196,10 @@ var stop = function () {
 //// CHANGING STATE ////
 
 function highlightSelf (nodeOfInterestIndex, col) {
-  console.log("COLORING: " + col + ", " + nodeOfInterestIndex);
   vis.selectAll("circle.node")
     //.transition().duration(500)
       .style("fill", function(d,i) {
-        console.log("i: " + i);
-        if (i === nodeOfInterestIndex) { console.log("COLORED: " + col); d.color = col; return d.color; }
+        if (i == nodeOfInterestIndex) { d.color = col; return d.color; }
         else { return d.color; }
       })
       //.attr("r", function (d, i) { return (i === nodeOfInterestIndex) ? nucleusradius * 2 : nucleusradius})
@@ -320,8 +317,8 @@ function countNeighbours (index) {
 
 function checkIfEdge (index) {
   //Not a perfect method, but it will do for our purposes:
-  // We know that only edge cases can have less than 5 neighbours,
-  // but some have more.
+  // We know that it is very rare that a non-edge cell can have less than 5 neighbours,
+  // also, some edge cells have 5 or more neighbours.
   return countNeighbours(index) < 5;
 }
 
