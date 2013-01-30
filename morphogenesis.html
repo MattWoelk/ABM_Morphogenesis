@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!--{{{-->
 <html>
   <head>
     <title>Morphogenesis</title>
@@ -6,7 +6,6 @@
     <script type="text/javascript" src="d3.v3.js"></script>
     <script type="text/javascript" src="underscore.js"></script>
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
-    <!--:syn sync fromstart-->
   </head>
   <body>
     <input id='zoomin' type='button' onclick='splitAllNodes()' value = '+' />
@@ -20,10 +19,10 @@
       <li><label><input type="radio" name="casting" value="monoToEdge"/>Random Walk Until Reaching An Edge Cell</li>
     </ul>
 
-    <br />
+    <br /><!--}}}-->
     <script type="text/javascript">
 
-//TODO:
+//{{{TODO:
 //      Start a random walk until getting to an edge cell.
 //      Create head nodes at that location.
 //      - which have gravity to each-other, but mesh with everything else.
@@ -44,8 +43,9 @@
 //      2. A -> B, C []
 //      3. A -> A, B [done]
 //      4. A -> B    [done]
+// TODO }}}
 
-
+//{{{ VARIABLES
 var generating = false;
 var paused = false;
 var startingQuantity = 0; //6 is best
@@ -81,10 +81,11 @@ var force = d3.layout.force()
     .gravity(0.05)
     .size([w, h]);
 
-    var clips = vis.append("svg:clipPath");
+var clips = vis.append("svg:clipPath");
 
+// VARIABLES }}}
 
-//// TICK ////
+//{{{ TICK
 
 force.on("tick", function(e) {
   // ENTER voronoi //
@@ -139,8 +140,9 @@ force.on("tick", function(e) {
         .attr('r', cellradius);
 });
 
+// TICK }}}
 
-//// INITIAL SETUP ////
+//{{{ INITIAL SETUP
 
 vis.selectAll("path")
     .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
@@ -155,8 +157,9 @@ setInterval(addNodeIfGen, 1000);
 
 console.log("===Simulation Started===");
 
+// INITIAL SETUP }}}
 
-//// INTERFACE ////
+//{{{ INTERFACE
 
 function cloock (index) {
   var b = document.querySelector("#casting input:checked").value;
@@ -193,8 +196,9 @@ var stop = function () {
   }
 }
 
+// INTERFACE }}}
 
-//// CHANGING STATE ////
+//{{{ CHANGING STATE
 
 function highlightSelf (nodeOfInterestIndex, col) {
   console.log("COLORING: " + col + ", " + nodeOfInterestIndex);
@@ -226,8 +230,9 @@ function highlightNeighbours (nodeOfInterest, nodeOfInterestIndex) {
         .style("fill", function(d,i) { return (neighbours.indexOf(i) > -1) ? "#F0F" : "#0FF"; });
 }
 
+// CHANGING STATE }}}
 
-//// PROPAGATING ////
+//{{{ PROPAGATING
 
 function propagateOneToAll (index) {
   //console.log("proping: " + index);
@@ -267,8 +272,9 @@ function propagateMonoToEdge (index) {
   }
 }
 
+// PROPAGATING }}}
 
-//// ADDING AND REMOVING NODES ////
+//{{{ ADDING AND REMOVING NODES
 
 var addNode = function (indexOfNodeToMultiply) {
   if (paused === false){
@@ -307,8 +313,9 @@ var addNodeIfGen = function () {
   if (generating) { addNewNodeToEndOfList(); }
 }
 
+// ADDING AND REMOVING NODES }}}
 
-//// HELPER METHODS ////
+//{{{ HELPER METHODS
 
 function generateAllNeighbours () {
   return d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }))
@@ -325,10 +332,13 @@ function checkIfEdge (index) {
   return countNeighbours(index) < 5;
 }
 
+// HELPER METHODS }}}
+
 // set up the initial mass (mostly for testing)
 _.times(1, addNewNodeToEndOfList);
 _.times(startingQuantity, splitAllNodes);
 
     </script>
-  </body>
-</html>
+  </body><!--{{{-->
+</html><!--}}}-->
+<!-- vim: set foldmethod=marker: -->
