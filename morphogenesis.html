@@ -23,12 +23,9 @@
     <script type="text/javascript">
 
 //{{{TODO:
-//  Don't count neighbours which are more than two radii (cellRadius) away.
-//  Start a random walk until getting to an edge cell.
 //  Create head nodes at that location.
 //  - which have gravity to each-other, but mesh with everything else.
 //  - also, they should look different.
-//  Fix the edge-cases (at borders, sometimes) where nodes are shown to be neighbours, when they actually are not neighbours.
 
 //  Allow nodes to choose their state depending on the state of their neighbours.
 //  - make this easy to work with a nice architecture.
@@ -48,7 +45,7 @@
 
 //{{{ VARIABLES
 var generating = false;
-var generateSpeed = 500;
+var generationPeriod = 500;
 var paused = false;
 var startingQuantity = 0; //6 is best
 var nbz = [];
@@ -61,7 +58,7 @@ var w = 860,
     fill = d3.scale.category10(),
     nodes = [], // this is treated like a global variable
     foci = {x: w/2, y: h/2};
-    cellRadius = 32; //32 for charge strength of -30, distance of 20, and gravity 0.05
+    cellRadius = 34; //34 for charge strength of -30, distance of 20, and gravity 0.05
     nucleusradius = 7;
 
 var vis = d3.select("body").append("svg:svg")
@@ -155,7 +152,7 @@ vis.selectAll("path")
 var incrementer = -1
 
 // set up interval of generation
-setInterval(addNodeIfGen, generateSpeed);
+setInterval(addNodeIfGen, generationPeriod);
 
 console.log("===Simulation Started===");
 
@@ -170,7 +167,7 @@ function cloock (index) {
   } else if (b.localeCompare("multi") === 0){
     propagateOneToAll(index);
   } else if (b.localeCompare("monoToEdge") === 0){
-    propagateMonoToEdge(index);
+    propagateMonoToEdge(index, true, 4);
   } else {
     console.log("UNIMPLEMENTED")
   }
@@ -241,7 +238,7 @@ function propagateOneToAll (index) {
   if (!paused && neighbours.length > 0) {
     _.forEach(neighbours, function (d,i) {
       highlightSelf(d, "#CB2EFF");
-      setTimeout(propagateOneToAll, generateSpeed, d);
+      setTimeout(propagateOneToAll, generationPeriod, d);
     });
   }
 }
@@ -252,18 +249,21 @@ function propagateOneToOne (index) {
   rndm = _.random(0, neighbours.length - 1);
   if (!paused && neighbours.length > 0) {
     highlightSelf(neighbours[rndm], "#CB2EFF");
-    setTimeout(propagateOneToOne, generateSpeed, [neighbours[rndm]]);
+    setTimeout(propagateOneToOne, generationPeriod, [neighbours[rndm]]);
   }
 }
 
-function propagateMonoToEdge (index) {
+function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
   neighbours = generateAllNeighbours()[index];
   if (checkIfEdge(index)) {
     highlightSelf(index, "#FFFFFF");
+    if (startGrowingThere) {
+      splitNodeAmountOfTimes(index, howManyToGrow);
+    }
   } else if (!paused && neighbours.length > 0) {
     rndm = _.random(0, neighbours.length - 1);
     highlightSelf(index, "#CB2EFF");
-    setTimeout(propagateMonoToEdge, generateSpeed, neighbours[rndm]);
+    setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
   }
 }
 
@@ -288,6 +288,14 @@ var addNode = function (indexOfNodeToMultiply) {
     force.start();
   }
 };
+
+var splitNodeAmountOfTimes = function (indexOfNodeToMultiply, howManyTimes) {
+  var i = howManyTimes;
+  while (i >= 0) {
+    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply);
+    i = i - 1;
+  }
+}
 
 var addNewNodeToEndOfList = function () {
   addNode(incrementer);
@@ -329,10 +337,49 @@ function countNeighbours (index) {
 }
 
 function checkIfEdge (index) {
-  //Not a perfect method, but it will do for our purposes:
-  // We know that only edge cases can have less than 5 neighbours,
-  // but some have more.
-  return countNeighbours(index) < 5;
+  //Not a perfect method:
+  // There are occasional edge nodes which are NOT considered to be edge nodes,
+  // but it will work fine for us.
+  // There are also occasional inner nodes which ARE considered to be edge nodes,
+  // but it's rare enough that it should be okay.
+
+  // If we have a cycle that means we are NOT an edge node.
+  return !findCycle(index)
+}
+
+function findCycle (index) {
+  var neighbours = generateAllNeighbours();
+  var neighboursOfIndex = neighbours[index];
+
+  // there is only one node
+  if (neighboursOfIndex.length == 0) {
+    return false;
+  }
+
+  // the neighbours' neighbours, which only include the neighbours.
+  // AKA we are only considering nodes which are neighbours of index.
+  var filteredNeighbours = _.map(neighbours, function (nei) { return _.filter(nei, function (nod) {
+    return neighboursOfIndex.indexOf(nod) > -1;
+  })});
+
+  var previousNode = -1;
+  var currentNode = neighboursOfIndex[0];
+  do {
+    var fil = _.filter(filteredNeighbours[currentNode], function (nod) { return nod != previousNode; });
+    if (fil.length == 0) return false;
+    previousNode = currentNode;
+    currentNode = fil[0];
+  } while (currentNode != neighboursOfIndex[0])
+
+  return true;
+
+  //var currentNode = neighboursOfIndex[0];
+  //var previousNode = -1;
+
+  //while (currentNode != neighboursOfIndex[0]) {
+  //}
+
+  //return true;
 }
 
 function distanceBetweenTwoPoints(x1, x2, y1, y2) {
