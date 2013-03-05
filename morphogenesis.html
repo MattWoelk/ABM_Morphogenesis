@@ -44,6 +44,7 @@ var generating = false;
 var generationPeriod = 500;
 var paused = false;
 var startingQuantity = 0; //6 is best
+var headParent = 0;
 
 document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
 document.getElementById('plause').value = paused ? 'play' : 'pause';
@@ -52,7 +53,7 @@ var w = 860;
 var h = 430;
 var fill = d3.scale.category10();
 var nodes = []; // this is treated like a global variable
-var links = []; // "global" variable, links between the nodes, by index.
+//var links = []; // "global" variable, links between the nodes, by index.
 var foci = {x: w/2, y: h/2};
 var cellRadius = 34; //34 for charge strength of -30, distance of 20, and gravity 0.05
 var nucleusradius = 7;
@@ -73,7 +74,7 @@ var force = d3.layout.force()
     //.linkDistance(0) // this affected nothing
     .links([])
 //  .linkStrength() // TODO: could be useful someday
-    .linkDistance(cellRadius)
+    //.linkDistance(cellRadius)
     .friction(0.85)
     .gravity(0.05)
     .size([w, h]);
@@ -100,10 +101,12 @@ var colors = {
 
 force.on("tick", function(e) {
   // Push different nodes in different directions for clustering.
-  var k = 1 * e.alpha;
+  var k = 3 * e.alpha;
   nodes.forEach(function(o, i) {
-    o.y += i & 1 ? k : -k;
-    o.x += i & 2 ? k : -k;
+    if (o.type === "head") {
+      o.y += i & 1 ? k : -k;
+      o.x += i & 2 ? k : -k;
+    }
   });
 
   // ENTER voronoi //
@@ -308,9 +311,9 @@ function copyLinks(ln) {
 var addHeadNode = function (indexOfNodeToMultiply) {
   addNode(indexOfNodeToMultiply);
   // TODO: use the function instead for this
-  links.push({source: (nodes.length - 1),
-              target: indexOfNodeToMultiply});
-  force.links(copyLinks(links));
+  //links.push({source: (nodes.length - 1),
+              //target: indexOfNodeToMultiply});
+  //force.links(copyLinks(links));
   nodes[nodes.length-1].type = "head";
 
   force.start();
@@ -351,10 +354,10 @@ var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes) 
 }
 
 function addLink(nodChild, nodParent) {
-  links.push({source: nodChild,
-              target: nodParent});
-  force.links(copyLinks(links));
-  force.start();
+  //links.push({source: nodChild,
+              //target: nodParent});
+  //force.links(copyLinks(links));
+  //force.start();
 }
 
 function splitAllOfTypeWithLink (type) {
