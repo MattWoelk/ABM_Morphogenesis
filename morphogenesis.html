@@ -101,11 +101,18 @@ var colors = {
 
 force.on("tick", function(e) {
   // Push different nodes in different directions for clustering.
-  var k = 3 * e.alpha;
+  var k = 0.05 * e.alpha;
   nodes.forEach(function(o, i) {
     if (o.type === "head") {
-      o.y += i & 1 ? k : -k;
-      o.x += i & 2 ? k : -k;
+      if (i === headParent) {
+        //console.log("unconsolable");
+      }
+      var distx = 20;
+      var disty = 20;
+      var distx = nodes[headParent].x - o.x;
+      var disty = nodes[headParent].y - o.y;
+      o.y += disty * k;
+      o.x += distx * k;
     }
   });
 
@@ -191,6 +198,7 @@ function cloock (index) {
   } else if (b.localeCompare("multi") === 0){
     propagateOneToAll(index);
   } else if (b.localeCompare("monoToEdge") === 0){
+    headParent = index;
     propagateMonoToEdge(index, true, 3);
   } else {
     console.log("UNIMPLEMENTED")
@@ -239,10 +247,6 @@ function highlightSelf (nodeOfInterestIndex) {
 
 function highlightNeighboursIncludingSelf  (nodeOfInterestIndex) {
   var index = nodeOfInterestIndex;
-  console.log(index +
-      ", type: "  + nodes[index].type  +
-      ", state: " + nodes[index].state +
-      ", color: " + colors[nodes[index].type][nodes[index].state]);
   highlightSelf(nodeOfInterestIndex);
   highlightNeighbours(nodeOfInterestIndex);
   updateColors();
@@ -309,7 +313,7 @@ function copyLinks(ln) {
 }
 
 var addHeadNode = function (indexOfNodeToMultiply) {
-  addNode(indexOfNodeToMultiply);
+  addNode(indexOfNodeToMultiply, "normal");
   // TODO: use the function instead for this
   //links.push({source: (nodes.length - 1),
               //target: indexOfNodeToMultiply});
@@ -319,7 +323,7 @@ var addHeadNode = function (indexOfNodeToMultiply) {
   force.start();
 }
 
-var addNode = function (indexOfNodeToMultiply) {
+var addNode = function (indexOfNodeToMultiply, type) {
   // TODO:
   // - if indexOfNodeToMultiply is a head node,
   //   then the new node should link to it, and
@@ -334,7 +338,7 @@ var addNode = function (indexOfNodeToMultiply) {
     nodes.push({ // push a new node at the location of the previous one
       x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
       y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
-      type: "normal",
+      type: type,
       state: "deselected",
     }); //{id: ~~(Math.random())});
 
@@ -345,9 +349,9 @@ var addNode = function (indexOfNodeToMultiply) {
 
 var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes) {
   var i = howManyTimes;
-  nodes[indexOfNodeToMultiply].type = "head";
+  //nodes[indexOfNodeToMultiply].type = "head";
   while (i >= 0) {
-    setTimeout(splitAllOfTypeWithLink, generationPeriod * i / 2, "head");
+    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, "head");
     //setTimeout(addHeadNode, generationPeriod * i / 2, indexOfNodeToMultiply);
     i = i - 1;
   }
@@ -363,7 +367,7 @@ function addLink(nodChild, nodParent) {
 function splitAllOfTypeWithLink (type) {
   _.each(nodes, function (nod, i) {
     if (nod.type === type) {
-      addNode(i);
+      addNode(i, "normal");
       nodes[nodes.length - 1].type = type;
       addLink(i, nodes.length - 1);
     }
@@ -373,13 +377,13 @@ function splitAllOfTypeWithLink (type) {
 var splitNodeAmountOfTimes = function (indexOfNodeToMultiply, howManyTimes) {
   var i = howManyTimes;
   while (i >= 0) {
-    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply);
+    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, "normal");
     i = i - 1;
   }
 }
 
 var addNewNodeToEndOfList = function () {
-  addNode(incrementer);
+  addNode(incrementer, "normal");
 }
 
 var splitAllNodes = function () {
@@ -389,7 +393,7 @@ var splitAllNodes = function () {
 
   //for every node, make a new node
   for (i = 0; i < incNow; i++) {
-    addNode(i);
+    addNode(i, "normal");
   }
 };
 
