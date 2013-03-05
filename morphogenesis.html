@@ -11,6 +11,7 @@
     <input id='zoomin' type='button' onclick='splitAllNodes()' value = '+' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />
+    <input id='removeHighlights' type='button' style="width:9em" onclick='removeHighlights()' value='remove highlights' />
 
     <ul id="casting">
       Casting:
@@ -89,9 +90,9 @@ var colors = {
     "selected"   : "#00DDEE",
   },
   "head"   : {
-    "deselected" : "#4E89FF",
-    "interest"   : "#EB2EFF",
-    "selected"   : "#20DDEE",
+    "deselected" : "#2E49aa",
+    "interest"   : "#aB0Eaa",
+    "selected"   : "#00bDaa",
   },
 }
 
@@ -101,7 +102,7 @@ var colors = {
 
 force.on("tick", function(e) {
   // Push different nodes in different directions for clustering.
-  var k = 0.05 * e.alpha;
+  var k = 0.010 * e.alpha;
   nodes.forEach(function(o, i) {
     if (o.type === "head") {
       if (i === headParent) {
@@ -198,7 +199,6 @@ function cloock (index) {
   } else if (b.localeCompare("multi") === 0){
     propagateOneToAll(index);
   } else if (b.localeCompare("monoToEdge") === 0){
-    headParent = index;
     propagateMonoToEdge(index, true, 3);
   } else {
     console.log("UNIMPLEMENTED")
@@ -247,8 +247,18 @@ function highlightSelf (nodeOfInterestIndex) {
 
 function highlightNeighboursIncludingSelf  (nodeOfInterestIndex) {
   var index = nodeOfInterestIndex;
+  removeHighlights();
   highlightSelf(nodeOfInterestIndex);
   highlightNeighbours(nodeOfInterestIndex);
+  updateColors();
+}
+
+function removeHighlights () {
+  _.each(nodes, function (d, i) {
+    //if (d.state === "selected") {
+      nodes[i].state = "deselected";
+    //}
+  });
   updateColors();
 }
 
@@ -290,8 +300,10 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
   neighbours = generateAllNeighbours()[index];
   if (checkIfEdge(index)) {
     highlightSelf(index);
+    headParent = index;
+    //nodes[headParent].fixed = true;
     if (startGrowingThere) {
-      splitNodeAmountOfTimesHead(index, howManyToGrow);
+      splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
     }
   } else if (!paused && neighbours.length > 0) {
     rndm = _.random(0, neighbours.length - 1);
@@ -347,11 +359,11 @@ var addNode = function (indexOfNodeToMultiply, type) {
   }
 };
 
-var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes) {
+var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes, type) {
   var i = howManyTimes;
   //nodes[indexOfNodeToMultiply].type = "head";
   while (i >= 0) {
-    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, "head");
+    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, type);
     //setTimeout(addHeadNode, generationPeriod * i / 2, indexOfNodeToMultiply);
     i = i - 1;
   }
