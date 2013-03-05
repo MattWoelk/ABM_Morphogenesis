@@ -23,6 +23,8 @@
     <script type="text/javascript">
 
 //{{{TODO:
+//  Colour the nodes based on what they are
+//  and by their current state.
 //  Create head nodes at that location.
 //  - which have gravity to each-other, but mesh with everything else.
 //    - force.links([{source:0, target:1}, etc.]);
@@ -78,6 +80,8 @@ var force = d3.layout.force()
     .nodes(nodes)
     //.linkDistance(0) // this affected nothing
     .links([])
+//    - force.linkDistance() force.linkStrength()
+    .linkDistance(cellRadius)
     .friction(0.85)
     .gravity(0.05)
     .size([w, h]);
