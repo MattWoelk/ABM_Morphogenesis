@@ -14,9 +14,9 @@
 
     <ul id="casting">
       Casting:
-      <li><label><input type="radio" name="casting" value="multi" checked="checked"/>Multi Cast</li>
+      <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
       <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
-      <li><label><input type="radio" name="casting" value="monoToEdge"/>Random Walk Until Reaching An Edge Cell</li>
+      <li><label><input type="radio" name="casting" value="monoToEdge" checked="checked"/>Random Walk Until Reaching An Edge Cell</li>
     </ul>
 
     <br /><!--}}}-->
@@ -25,6 +25,8 @@
 //{{{TODO:
 //  Create head nodes at that location.
 //  - which have gravity to each-other, but mesh with everything else.
+//    - force.links([{source:0, target:1}, etc.]);
+//    - force.linkDistance() force.linkStrength()
 //  - also, they should look different.
 
 //  Allow nodes to choose their state depending on the state of their neighbours.
@@ -48,18 +50,18 @@ var generating = false;
 var generationPeriod = 500;
 var paused = false;
 var startingQuantity = 0; //6 is best
-var nbz = [];
 
 document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
 document.getElementById('plause').value = paused ? 'play' : 'pause';
 
-var w = 860,
-    h = 430,
-    fill = d3.scale.category10(),
-    nodes = [], // this is treated like a global variable
-    foci = {x: w/2, y: h/2};
-    cellRadius = 34; //34 for charge strength of -30, distance of 20, and gravity 0.05
-    nucleusradius = 7;
+var w = 860;
+var h = 430;
+var fill = d3.scale.category10();
+var nodes = []; // this is treated like a global variable
+var links = []; // "global" variable, links between the nodes, by index.
+var foci = {x: w/2, y: h/2};
+var cellRadius = 34; //34 for charge strength of -30, distance of 20, and gravity 0.05
+var nucleusradius = 7;
 
 var vis = d3.select("body").append("svg:svg")
     .attr("width", w)
@@ -258,7 +260,7 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
   if (checkIfEdge(index)) {
     highlightSelf(index, "#FFFFFF");
     if (startGrowingThere) {
-      splitNodeAmountOfTimes(index, howManyToGrow);
+      splitNodeAmountOfTimesHead(index, howManyToGrow);
     }
   } else if (!paused && neighbours.length > 0) {
     rndm = _.random(0, neighbours.length - 1);
@@ -271,7 +273,34 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
 
 //{{{ ADDING AND REMOVING NODES
 
+function copyLinks(ln) {
+  var lnew = []
+  _.each(ln, function (l) {
+    lnew.push({source:l.source, target:l.target});
+  });
+  return lnew;
+}
+
+var addHeadNode = function (indexOfNodeToMultiply) {
+  addNode(indexOfNodeToMultiply);
+  links.push({source: (nodes.length - 1),
+              target: indexOfNodeToMultiply});
+  force.links(copyLinks(links));
+  nodes[nodes.length-1].type = "head";
+
+  force.start();
+}
+
 var addNode = function (indexOfNodeToMultiply) {
+  // TODO:
+  // - if indexOfNodeToMultiply is a head node,
+  //   then the new node should link to it, and
+  //   also be a head node
+  //force.links(copyLinks( links ));
+  console.log("force.links()");
+  console.log(force.links());
+  console.log("links");
+  console.log(links);
   if (paused === false){
     var rad = Math.random() * Math.PI * 2;
     var xoffset = Math.cos(rad) * nucleusradius;
@@ -282,12 +311,21 @@ var addNode = function (indexOfNodeToMultiply) {
       x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
       y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
       color: "#2E89FF",
+      type: "normal",
     }); //{id: ~~(Math.random())});
 
     incrementer++;
     force.start();
   }
 };
+
+var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes) {
+  var i = howManyTimes;
+  while (i >= 0) {
+    setTimeout(addHeadNode, generationPeriod * i / 2, indexOfNodeToMultiply);
+    i = i - 1;
+  }
+}
 
 var splitNodeAmountOfTimes = function (indexOfNodeToMultiply, howManyTimes) {
   var i = howManyTimes;
@@ -403,4 +441,5 @@ _.times(startingQuantity, splitAllNodes);
     </script>
   </body><!--{{{-->
 </html><!--}}}-->
+
 <!-- vim: set foldmethod=marker: -->
