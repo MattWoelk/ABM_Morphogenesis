@@ -9,9 +9,11 @@
   </head>
   <body>
     <input id='zoomin' type='button' onclick='splitAllNodes()' value = '+' />
+    <input id='zoomin' type='button' onclick='splitAllNodes()' value = 'A --> A, A' />
+    <input id='zoomin' type='button' onclick='splitAllNodes()' value = 'B --> B, A' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />
-    <input id='removeHighlights' type='button' style="width:9em" onclick='removeHighlights()' value='remove highlights' />
+    <input id='toggleMouseHighlighting' type='button' style="width:9em" onclick='toggleMouseHighlighting()' value='remove highlights' />
 
     <ul id="casting">
       Casting:
@@ -49,11 +51,13 @@
 var generating = false;
 var generationPeriod = 500;
 var paused = false;
+var showingMouseHighlights = false;
 var startingQuantity = 0; //6 is best
 var headParent = 0;
 
 document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
 document.getElementById('plause').value = paused ? 'play' : 'pause';
+document.getElementById('toggleMouseHighlighting').value = showingMouseHighlights ? 'remove mouse highlighting' : 'engage mouse highlighting';
 
 var w = 860;
 var h = 430;
@@ -99,6 +103,11 @@ var colors = {
     "interest"   : "#aB0Eaa",
     "selected"   : "#00bDaa",
   },
+  "spine"   : {
+    "deselected" : "#14A63B",
+    "interest"   : "#BE7BC7",
+    "selected"   : "#A5D69F",
+  },
 }
 
 // VARIABLES }}}
@@ -128,7 +137,12 @@ force.on("tick", function(e) {
     .enter().append("path")
     .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
     .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
-    .on("mouseover", function (d, i) { return highlightNeighboursIncludingSelf(i); })
+    .on("mouseover", function (d, i) {
+        if (showingMouseHighlights) {
+          return highlightNeighboursIncludingSelf(i);
+        } else {
+          return;
+        }})
     .on("click", function (d, i) { return cloock(i); })
     .style("stroke", "#aaa")
     .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
@@ -258,6 +272,15 @@ function highlightNeighboursIncludingSelf  (nodeOfInterestIndex) {
   updateColors();
 }
 
+function toggleMouseHighlighting () {
+  showingMouseHighlights = showingMouseHighlights ? false : true;
+  document.getElementById('toggleMouseHighlighting').value = showingMouseHighlights ? 'remove mouse highlighting' : 'engage mouse highlighting';
+
+  if (!showingMouseHighlights) {
+    removeHighlights();
+  }
+}
+
 function removeHighlights () {
   _.each(nodes, function (d, i) {
     //if (d.state === "selected") {
@@ -281,10 +304,10 @@ function highlightNeighbours (nodeOfInterestIndex) {
 
 function propagateOneToAll (index) {
   neighbours = generateAllNeighbours()[index];
-  neighbours = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") !== 0; });
+  nbs = _.filter(neighbours, function (d) { /*console.log(nodes[d].state);*/ return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
 
-  if (!paused && neighbours.length > 0) {
-    _.forEach(neighbours, function (d,i) {
+  if (!paused && nbs.length > 0) {
+    _.forEach(nbs, function (d,i) {
       highlightSelf(d);
       setTimeout(propagateOneToAll, generationPeriod, d);
     });
@@ -309,6 +332,7 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
     //nodes[headParent].fixed = true;
     if (startGrowingThere) {
       splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
+      //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
     }
   } else if (!paused && neighbours.length > 0) {
     rndm = _.random(0, neighbours.length - 1);
@@ -327,17 +351,6 @@ function copyLinks(ln) {
     lnew.push({source:l.source, target:l.target});
   });
   return lnew;
-}
-
-var addHeadNode = function (indexOfNodeToMultiply) {
-  addNode(indexOfNodeToMultiply, "normal");
-  // TODO: use the function instead for this
-  //links.push({source: (nodes.length - 1),
-              //target: indexOfNodeToMultiply});
-  //force.links(copyLinks(links));
-  nodes[nodes.length-1].type = "head";
-
-  force.start();
 }
 
 var addNode = function (indexOfNodeToMultiply, type) {
@@ -369,7 +382,6 @@ var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes, 
   //nodes[indexOfNodeToMultiply].type = "head";
   while (i >= 0) {
     setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, type);
-    //setTimeout(addHeadNode, generationPeriod * i / 2, indexOfNodeToMultiply);
     i = i - 1;
   }
 }
