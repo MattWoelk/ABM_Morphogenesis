@@ -8,9 +8,8 @@
     <link type="text/css" rel="stylesheet" href="voronoi.css"/>
   </head>
   <body>
-    <input id='zoomin' type='button' onclick='splitAllNodes()' value = '+' />
-    <input id='zoomin' type='button' onclick='splitAllNodes()' value = 'A --> A, A' />
-    <input id='zoomin' type='button' onclick='splitAllNodes()' value = 'B --> B, A' />
+    <input id='zoomin' type='button' onclick='splitAllNodesA_AA()' value = 'A --> A, A' />
+    <input id='zoomin' type='button' onclick='splitAllNodesB_BA()' value = 'B --> B, A' />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />
     <input id='toggleMouseHighlighting' type='button' style="width:9em" onclick='toggleMouseHighlighting()' value='remove highlights' />
@@ -306,9 +305,9 @@ function propagateOneToAll (index) {
   neighbours = generateAllNeighbours()[index];
   nbs = _.filter(neighbours, function (d) { /*console.log(nodes[d].state);*/ return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
 
+  highlightSelf(index);
   if (!paused && nbs.length > 0) {
     _.forEach(nbs, function (d,i) {
-      highlightSelf(d);
       setTimeout(propagateOneToAll, generationPeriod, d);
     });
   }
@@ -316,11 +315,11 @@ function propagateOneToAll (index) {
 
 function propagateOneToOne (index) {
   neighbours = generateAllNeighbours()[index];
-  neighbours = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") !== 0; });
-  rndm = _.random(0, neighbours.length - 1);
-  if (!paused && neighbours.length > 0) {
-    highlightSelf(neighbours[rndm]);
-    setTimeout(propagateOneToOne, generationPeriod, [neighbours[rndm]]);
+  nbs = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
+  rndm = _.random(0, nbs.length - 1);
+  highlightSelf(index);
+  if (!paused && nbs.length > 0) {
+    setTimeout(propagateOneToOne, generationPeriod, [nbs[rndm]]);
   }
 }
 
@@ -415,7 +414,18 @@ var addNewNodeToEndOfList = function () {
   addNode(incrementer, "normal");
 }
 
-var splitAllNodes = function () {
+var splitAllNodesA_AA = function () {
+  // split every node into two nodes
+  var i = 0;
+  incNow = incrementer + 1;
+
+  //for every node, make a new node
+  for (i = 0; i < incNow; i++) {
+    addNode(i, nodes[i].type);
+  }
+};
+
+var splitAllNodesB_BA = function () {
   // split every node into two nodes
   var i = 0;
   incNow = incrementer + 1;
@@ -512,7 +522,7 @@ function closeNeighbours(n1, n2) {
 
 // set up the initial mass (mostly for testing)
 _.times(1, addNewNodeToEndOfList);
-_.times(startingQuantity, splitAllNodes);
+_.times(startingQuantity, splitAllNodesA_AA);
 
     </script>
   </body><!--{{{-->
