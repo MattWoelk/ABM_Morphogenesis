@@ -10,15 +10,20 @@
   <body>
     <input id='zoomin' type='button' onclick='splitAllNodesA_AA()' value = 'A --> A, A' />
     <input id='zoomin' type='button' onclick='splitAllNodesB_BA()' value = 'B --> B, A' />
+    |
+    <input id='zoomin' type='button' onclick='splitAllNodesA_AAwithState()' value = 'A --> A, A colour' />
+    <input id='zoomin' type='button' onclick='splitAllNodesB_BAwithState()' value = 'B --> B, A colour' />
+    <br />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
-    <input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />
-    <input id='toggleMouseHighlighting' type='button' style="width:9em" onclick='toggleMouseHighlighting()' value='remove highlights' />
+    <!--<input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />-->
+    <input id='toggleMouseHighlighting' type='button' style="width:13em" onclick='toggleMouseHighlighting()' value='remove highlights' />
 
     <ul id="casting">
       Casting:
       <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
       <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
       <li><label><input type="radio" name="casting" value="monoToEdge" checked="checked"/>Random Walk Until Reaching An Edge Cell</li>
+      <li><label><input type="radio" name="casting" value="automation" checked="checked"/>Start Automation (click on edge cell) <input id='step' type='button' style="width:4em" onclick='automateIteration()' value='iterate' /></li>
     </ul>
 
     <br /><!--}}}-->
@@ -54,7 +59,7 @@ var showingMouseHighlights = false;
 var startingQuantity = 0; //6 is best
 var headParent = 0;
 
-document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
+//document.getElementById('generating').value = generating ? 'stop generating' : 'start simulation';
 document.getElementById('plause').value = paused ? 'play' : 'pause';
 document.getElementById('toggleMouseHighlighting').value = showingMouseHighlights ? 'remove mouse highlighting' : 'engage mouse highlighting';
 
@@ -106,6 +111,16 @@ var colors = {
     "deselected" : "#14A63B",
     "interest"   : "#BE7BC7",
     "selected"   : "#A5D69F",
+  },
+  "right"   : {
+    "deselected" : "#850035",
+    "interest"   : "#FF086B",
+    "selected"   : "#C77797",
+  },
+  "left"   : {
+    "deselected" : "#007512",
+    "interest"   : "#00D921",
+    "selected"   : "#7ABf85",
   },
 }
 
@@ -218,6 +233,8 @@ function cloock (index) {
     propagateOneToAll(index);
   } else if (b.localeCompare("monoToEdge") === 0){
     propagateMonoToEdge(index, true, 3);
+  } else if (b.localeCompare("automation") === 0){
+    startAutomation(index);
   } else {
     console.log("UNIMPLEMENTED")
   }
@@ -226,10 +243,10 @@ function cloock (index) {
 var stopGen = function () {
   if (generating === false) {
     generating = true;
-    document.getElementById('generating').value = "stop simulation";
+    //document.getElementById('generating').value = "stop simulation";
   }else{
     generating = false;
-    document.getElementById('generating').value = "start simulation";
+    //document.getElementById('generating').value = "start simulation";
   }
 }
 
@@ -326,7 +343,8 @@ function propagateOneToOne (index) {
 function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
   neighbours = generateAllNeighbours()[index];
   if (checkIfEdge(index)) {
-    highlightSelf(index);
+    nodes[index].type = "head";
+    updateColors();
     headParent = index;
     //nodes[headParent].fixed = true;
     if (startGrowingThere) {
@@ -338,6 +356,53 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
     highlightSelf(index);
     setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
   }
+}
+
+function automateIteration() {
+  var allNeighbours = generateAllNeighbours();
+  for (nod in nodes) {
+    console.log(nod);
+    var r = _.some(allNeighbours[nod], function (d) {
+          console.log(nodes[d].type.localeCompare("right") === 0);
+          return nodes[d].type.localeCompare("right") === 0;
+        }); // if it has a right neighbour
+    var l = _.some(allNeighbours[nod], function (d) {
+          return nodes[d].type.localeCompare("left") === 0;
+        }); // if it has a left neighbour
+
+    if (r && l) {
+      /*it is touching right and left*/
+      console.log("TOUCHING BOTH");
+      nodes[nod].type = "spine";
+    } else if (r) {
+      console.log("TOUCHING right");
+        nodes[nod].type = "right";//make it right
+    } else if (l) {
+      console.log("TOUCHING left");
+        nodes[nod].type = "left";//make it left
+    }
+  }
+  updateColors();
+
+  // TODO: if any are still of type "normal", keep iterating
+}
+
+function startAutomation(index) {
+  var neighbours = generateAllNeighbours()[index];
+
+  var edgeNeighbours = _.filter(neighbours, function (d) {
+    return checkIfEdge(d);
+  });
+
+  if(edgeNeighbours.length < 2) {
+    alert("Please select a cell with more than one edge cell");
+    return;
+  }
+
+  nodes[edgeNeighbours[0]].type = "left";
+  nodes[edgeNeighbours[1]].type = "right";
+
+  automateIteration();
 }
 
 // PROPAGATING }}}
@@ -352,7 +417,10 @@ function copyLinks(ln) {
   return lnew;
 }
 
-var addNode = function (indexOfNodeToMultiply, type) {
+var addNode = function (indexOfNodeToMultiply, type, state) {
+  if (!state) {
+    var state = "deselected";
+  }
   // TODO:
   // - if indexOfNodeToMultiply is a head node,
   //   then the new node should link to it, and
@@ -368,7 +436,7 @@ var addNode = function (indexOfNodeToMultiply, type) {
       x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
       y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
       type: type,
-      state: "deselected",
+      state: state,
     }); //{id: ~~(Math.random())});
 
     incrementer++;
@@ -426,6 +494,28 @@ var splitAllNodesA_AA = function () {
 };
 
 var splitAllNodesB_BA = function () {
+  // split every node into two nodes
+  var i = 0;
+  incNow = incrementer + 1;
+
+  //for every node, make a new node
+  for (i = 0; i < incNow; i++) {
+    addNode(i, "normal");
+  }
+};
+
+var splitAllNodesA_AAwithState = function () {
+  // split every node into two nodes
+  var i = 0;
+  incNow = incrementer + 1;
+
+  //for every node, make a new node
+  for (i = 0; i < incNow; i++) {
+    addNode(i, nodes[i].type, nodes[i].state);
+  }
+};
+
+var splitAllNodesB_BAwithState = function () {
   // split every node into two nodes
   var i = 0;
   incNow = incrementer + 1;
