@@ -23,6 +23,7 @@
       <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
       <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
       <li><label><input type="radio" name="casting" value="monoToEdge" checked="checked"/>Random Walk Until Reaching An Edge Cell</li>
+      <li><label><input type="radio" name="casting" value="monoToEdgeWithSpine" checked="checked"/>Walk to edge, then make head and spine</li>
       <li><label><input type="radio" name="casting" value="automation" checked="checked"/>Start Automation (click on edge cell) <input id='step' type='button' style="width:4em" onclick='automateIteration()' value='iterate' /></li>
     </ul>
 
@@ -233,6 +234,8 @@ function cloock (index) {
     propagateOneToAll(index);
   } else if (b.localeCompare("monoToEdge") === 0){
     propagateMonoToEdge(index, true, 3);
+  } else if (b.localeCompare("monoToEdgeWithSpine") === 0){
+    propagateMonoToEdgeWithSpine(index, true, 3);
   } else if (b.localeCompare("automation") === 0){
     startAutomation(index);
   } else {
@@ -340,6 +343,25 @@ function propagateOneToOne (index) {
   }
 }
 
+function propagateMonoToEdgeWithSpine (index, startGrowingThere, howManyToGrow) {
+  neighbours = generateAllNeighbours()[index];
+  if (checkIfEdge(index)) {
+    nodes[index].type = "head";
+    updateColors();
+    headParent = index;
+    //nodes[headParent].fixed = true;
+    if (startGrowingThere) {
+      startAutomation(index);
+      splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
+      //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
+    }
+  } else if (!paused && neighbours.length > 0) {
+    rndm = _.random(0, neighbours.length - 1);
+    highlightSelf(index);
+    setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
+  }
+}
+
 function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
   neighbours = generateAllNeighbours()[index];
   if (checkIfEdge(index)) {
@@ -361,9 +383,8 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
 function automateIteration() {
   var allNeighbours = generateAllNeighbours();
   for (nod in nodes) {
-    console.log(nod);
+    if (nodes[nod].type.localeCompare("head") === 0) { continue; } // don't affect head nodes
     var r = _.some(allNeighbours[nod], function (d) {
-          console.log(nodes[d].type.localeCompare("right") === 0);
           return nodes[d].type.localeCompare("right") === 0;
         }); // if it has a right neighbour
     var l = _.some(allNeighbours[nod], function (d) {
@@ -372,13 +393,10 @@ function automateIteration() {
 
     if (r && l) {
       /*it is touching right and left*/
-      console.log("TOUCHING BOTH");
       nodes[nod].type = "spine";
     } else if (r) {
-      console.log("TOUCHING right");
         nodes[nod].type = "right";//make it right
     } else if (l) {
-      console.log("TOUCHING left");
         nodes[nod].type = "left";//make it left
     }
   }
@@ -522,7 +540,14 @@ var splitAllNodesB_BAwithState = function () {
 
   //for every node, make a new node
   for (i = 0; i < incNow; i++) {
-    addNode(i, "normal");
+    var toChange = nodes[i].type.localeCompare("left") === 0 ||
+                   nodes[i].type.localeCompare("right") === 0 ||
+                   nodes[i].type.localeCompare("normal") === 0;
+    if (toChange) {
+      addNode(i, nodes[i].type);
+    } else {
+      addNode(i, nodes[i].type, nodes[i].state);
+    }
   }
 };
 
