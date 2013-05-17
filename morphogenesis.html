@@ -100,6 +100,8 @@ var colors = {
     "spine"  : "#FC8D62", // orangish,
     "right"  : "#8DA0CB", // blueish,
     "left"   : "#66C2A5", // greenish,
+    "indicator"   : "#ddd",
+
     "deselected" : "#000",
     "interest"   : "#000",
     "selected"   : "#F00",
@@ -270,7 +272,7 @@ function highlightSelf (nodeOfInterestIndex) {
 }
 
 function highlightSelfState (nodeOfInterestIndex) {
-    nodes[nodeOfInterestIndex].state = "interest";
+    nodes[nodeOfInterestIndex].state = "selected";
     updateColors();
 }
 
@@ -366,7 +368,8 @@ function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
         }
     } else if (!paused && neighbours.length > 0) {
         var rndm = _.random(0, neighbours.length - 1);
-        highlightSelf(index);
+        highlightSelfState(index);
+        updateColors();
         setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
     }
 }
