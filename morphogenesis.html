@@ -17,10 +17,10 @@
 
     <ul id="casting">
       Casting:
-      <li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>
-      <li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>
+      <!--<li><label><input type="radio" name="casting" value="multi"/>Multi Cast</li>-->
+      <!--<li><label><input type="radio" name="casting" value="mono"/>Mono Cast</li>-->
       <li><label><input type="radio" name="casting" value="monoToEdge" checked="checked"/>Random Walk Until Reaching An Edge Cell</li>
-      <li><label><input type="radio" name="casting" value="monoToEdgeWithSpine" checked="checked"/>Walk to edge, then make head and spine</li>
+      <!--<li><label><input type="radio" name="casting" value="monoToEdgeWithSpine" checked="checked"/>Walk to edge, then make head and spine</li>-->
       <li><label><input type="radio" name="casting" value="automation" checked="checked"/>Start Automation (click on edge cell) <input id='step' type='button' style="width:4em" onclick='automateIteration()' value='iterate' /></li>
     </ul>
 
@@ -203,7 +203,7 @@ vis.selectAll("path")
 var incrementer = -1
 
 // set up interval of generation
-setInterval(addNodeIfGen, generationPeriod);
+setInterval('addNodeIfGen', generationPeriod);
 
 console.log("===Simulation Started===");
 
@@ -634,6 +634,21 @@ _.times(1, addNewNodeToEndOfList);
 _.times(startingQuantity, splitAllNodesA_AA);
 
     </script>
+    </br>
+    <h2>Instructions:</h2>
+    <h3>Pattern Formation:</h3>
+    <ul>
+        <li>Start with one cell, then click the 'A->A,A' and 'B->B,B' buttons.</li>
+        <li>Try these sequences: AABAAA (splotches), AAAABA (streaks), and AABBBA (dots).</li>
+        <li>Refresh the page to try another one.</li>
+    </ul>
+    <h3>Shape Formation:</h3>
+    <ul>
+        <li>Click 'A->A,A' five or six times (to get enough cells)</li>
+        <li>Wait for the cells to settle down.</li>
+        <li>With 'Start Automation' selected, click on an edge cell.</li>
+        <li>Click 'iterate' until the organism has a full spine and two distinct sides.</li>
+    </ul>
   </body><!--{{{-->
 </html><!--}}}-->
 
