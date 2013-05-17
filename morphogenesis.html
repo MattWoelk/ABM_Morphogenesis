@@ -10,9 +10,6 @@
   <body>
     <input id='zoomin' type='button' onclick='splitAllNodesA_AA()' value = 'A --> A, A' />
     <input id='zoomin' type='button' onclick='splitAllNodesB_BA()' value = 'B --> B, A' />
-    |
-    <input id='zoomin' type='button' onclick='splitAllNodesA_AAwithState()' value = 'A --> A, A colour' />
-    <input id='zoomin' type='button' onclick='splitAllNodesB_BAwithState()' value = 'B --> B, A colour' />
     <br />
     <input id='plause' type='button' style="width:5em" onclick='stop()' value='pause' />
     <!--<input id='generating' type='button' style="width:9em" onclick='stopGen()' value='stop generating' />-->
@@ -104,8 +101,8 @@ var colors = {
     "right"  : "#8DA0CB", // blueish,
     "left"   : "#66C2A5", // greenish,
     "deselected" : "#000",
-    "interest"   : "#FFF",
-    "selected"   : "#777",
+    "interest"   : "#000",
+    "selected"   : "#F00",
 }
 
 // VARIABLES }}}
@@ -272,10 +269,15 @@ function highlightSelf (nodeOfInterestIndex) {
     updateColors();
 }
 
+function highlightSelfState (nodeOfInterestIndex) {
+    nodes[nodeOfInterestIndex].state = "interest";
+    updateColors();
+}
+
 function highlightNeighboursIncludingSelf  (nodeOfInterestIndex) {
     var index = nodeOfInterestIndex;
     removeHighlights();
-    highlightSelf(nodeOfInterestIndex);
+    highlightSelfState(nodeOfInterestIndex);
     highlightNeighbours(nodeOfInterestIndex);
     updateColors();
 }
