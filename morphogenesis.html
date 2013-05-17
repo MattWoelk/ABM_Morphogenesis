@@ -74,9 +74,9 @@ var cellRadius = 34; //34 for charge strength of -30, distance of 20, and gravit
 var nucleusradius = 7;
 
 var vis = d3.select("body").append("svg:svg")
-    .attr("width", w)
-    .attr("height", h)
-    .attr("class", "PiYG");
+.attr("width", w)
+.attr("height", h)
+.attr("class", "PiYG");
 
 //defaults: size 1×1
 //          friction 0.9
@@ -85,44 +85,27 @@ var vis = d3.select("body").append("svg:svg")
 //          gravity strength 0.1
 //          and theta parameter 0.8
 var force = d3.layout.force()
-    .nodes(nodes)
-    //.linkDistance(0) // this affected nothing
-    .links([])
+.nodes(nodes)
+//.linkDistance(0) // this affected nothing
+.links([])
 //  .linkStrength() // TODO: could be useful someday
-    //.linkDistance(cellRadius)
-    .friction(0.85)
-    .gravity(0.05)
-    .size([w, h]);
+//.linkDistance(cellRadius)
+.friction(0.85)
+.gravity(0.05)
+.size([w, h]);
 
 var clips = vis.append("svg:clipPath");
 
-// usage: colors[type][state]
+// usage: colors[type/state]
 var colors = {
-  "normal" : {
-    "deselected" : "#2E89FF",
-    "interest"   : "#CB2EFF",
-    "selected"   : "#00DDEE",
-  },
-  "head"   : {
-    "deselected" : "#2E49aa",
-    "interest"   : "#aB0Eaa",
-    "selected"   : "#00bDaa",
-  },
-  "spine"   : {
-    "deselected" : "#14A63B",
-    "interest"   : "#BE7BC7",
-    "selected"   : "#A5D69F",
-  },
-  "right"   : {
-    "deselected" : "#850035",
-    "interest"   : "#FF086B",
-    "selected"   : "#C77797",
-  },
-  "left"   : {
-    "deselected" : "#007512",
-    "interest"   : "#00D921",
-    "selected"   : "#7ABf85",
-  },
+    "normal" : "#aaa", // grey,
+    "head"   : "#000", // black,
+    "spine"  : "#FC8D62", // orangish,
+    "right"  : "#8DA0CB", // blueish,
+    "left"   : "#66C2A5", // greenish,
+    "deselected" : "#000",
+    "interest"   : "#FFF",
+    "selected"   : "#777",
 }
 
 // VARIABLES }}}
@@ -130,79 +113,82 @@ var colors = {
 //{{{ TICK
 
 force.on("tick", function(e) {
-  // Push different nodes in different directions for clustering.
-  var k = 0.010 * e.alpha;
-  nodes.forEach(function(o, i) {
-    if (o.type === "head") {
-      if (i === headParent) {
-        //console.log("unconsolable");
-      }
-      var distx = 20;
-      var disty = 20;
-      var distx = nodes[headParent].x - o.x;
-      var disty = nodes[headParent].y - o.y;
-      o.y += disty * k;
-      o.x += distx * k;
-    }
-  });
+    // Push different nodes in different directions for clustering.
+    //var k = 0.010 * e.alpha;
+    //nodes.forEach(function(o, i) {
+    //    if (o.type === "head") {
+    //        if (i === headParent) {
+    //            //console.log("unconsolable");
+    //        }
+    //        var distx = 20;
+    //        var disty = 20;
+    //        var distx = nodes[headParent].x - o.x;
+    //        var disty = nodes[headParent].y - o.y;
+    //        o.y += disty * k;
+    //        o.x += distx * k;
+    //    }
+    //});
 
-  // ENTER voronoi //
-  vis.selectAll("path")
+    // ENTER voronoi //
+    vis.selectAll("path")
     .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
     .enter().append("path")
     .attr("clip-path", function (d, i) { return "url(#clip"+i+")"; })
     .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
     .on("mouseover", function (d, i) {
         if (showingMouseHighlights) {
-          return highlightNeighboursIncludingSelf(i);
+            return highlightNeighboursIncludingSelf(i);
         } else {
-          return;
+            return;
         }})
-    .on("click", function (d, i) { return cloock(i); })
-    .style("stroke", "#aaa")
-    .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
+        .on("click", function (d, i) { return cloock(i); })
+        .style("stroke", "#aaa")
+        .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
 
-  // UPDATE voronoi //
-  vis.selectAll("path")
-    .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; }))
-      .map(function(d) { return "M" + d.join("L") + "Z"; }))
-      .filter(function(d) { return this.getAttribute("d") != d; })
-      .attr("d", function(d) { return d; });
+        // UPDATE voronoi //
+        vis.selectAll("path")
+        .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; }))
+              .map(function(d) { return "M" + d.join("L") + "Z"; }))
+              .filter(function(d) { return this.getAttribute("d") != d; })
+              .attr("d", function(d) { return d; });
 
-  // ENTER circles //
-  vis.selectAll("circle.node")
-      .data(nodes)
-    .enter().append("svg:circle")
-    .attr("class", "node")
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; })
-      .attr("r", nucleusradius)
-      .style("stroke", function(d) { return d3.rgb(fill(0)).darker(2); })
-      .style("stroke-width", 1.5)
-      .style("fill", function(d) { return colors[d.type][d.state]; })
-      .call(force.drag);
+              // ENTER circles //
+              vis.selectAll("circle.node")
+              .data(nodes)
+              .enter().append("svg:circle")
+              .attr("class", "node")
+              .attr("cx", function(d) { return d.x; })
+              .attr("cy", function(d) { return d.y; })
+              .attr("r", nucleusradius)
+              .style("stroke", function(d) { return colors[d.state]; })
+              .style("stroke-width", 1.5)
+              .style("fill", function(d) { return colors[d.type]; })
+              .call(force.drag);
 
-  // UPDATE circles //
-  vis.selectAll("circle.node")
-    .attr("cx", function (d) { return d.x; })
-    .attr("cy", function (d) { return d.y; })
-    .attr("fill", function (d) {
-      return colors[d.type][d.state];
-    });
+              // UPDATE circles //
+              vis.selectAll("circle.node")
+              .attr("cx", function (d) { return d.x; })
+              .attr("cy", function (d) { return d.y; })
+              .attr("stroke", function (d) {
+                  return colors[d.state];
+              })
+              .attr("fill", function (d) {
+                  return colors[d.type];
+              });
 
-  // DELETE AND THEN ENTER clipping regions //
-  vis.selectAll(".clipper")
-    .remove(); // TODO: why do I have to delete them all in order to fix this ???
-               //       why can't I just move around clipPaths ?
-  vis.selectAll(".clipper")
-      .data(nodes)
-    .enter().append("svg:clipPath")
-      .attr("id", function (d, i) { return "clip"+i; })
-      .attr("class", "clipper")
-      .append("svg:circle")
-        .attr('cx', function (d) { return d.x; })
-        .attr('cy', function (d) { return d.y; })
-        .attr('r', cellRadius);
+              // DELETE AND THEN ENTER clipping regions //
+              vis.selectAll(".clipper")
+              .remove(); // TODO: why do I have to delete them all in order to fix this ???
+              //       why can't I just move around clipPaths ?
+              vis.selectAll(".clipper")
+              .data(nodes)
+              .enter().append("svg:clipPath")
+              .attr("id", function (d, i) { return "clip"+i; })
+              .attr("class", "clipper")
+              .append("svg:circle")
+              .attr('cx', function (d) { return d.x; })
+              .attr('cy', function (d) { return d.y; })
+              .attr('r', cellRadius);
 });
 
 // TICK }}}
@@ -210,10 +196,10 @@ force.on("tick", function(e) {
 //{{{ INITIAL SETUP
 
 vis.selectAll("path")
-    .data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
-  .enter().append("path")
-    .attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
-    .attr("d", function(d) { return "M" + d.join("L") + "Z"; });
+.data(d3.geom.voronoi(_.map(nodes, function (d) { return [d.x, d.y]; })))
+.enter().append("path")
+.attr("class", function(d, i) { return i ? "q" + (i % 9) + "-9" : null; })
+.attr("d", function(d) { return "M" + d.join("L") + "Z"; });
 
 var incrementer = -1
 
@@ -227,42 +213,42 @@ console.log("===Simulation Started===");
 //{{{ INTERFACE
 
 function cloock (index) {
-  var b = document.querySelector("#casting input:checked").value;
-  if (b.localeCompare("mono") === 0) {
-    propagateOneToOne(index);
-  } else if (b.localeCompare("multi") === 0){
-    propagateOneToAll(index);
-  } else if (b.localeCompare("monoToEdge") === 0){
-    propagateMonoToEdge(index, true, 3);
-  } else if (b.localeCompare("monoToEdgeWithSpine") === 0){
-    propagateMonoToEdgeWithSpine(index, true, 3);
-  } else if (b.localeCompare("automation") === 0){
-    startAutomation(index);
-  } else {
-    console.log("UNIMPLEMENTED")
-  }
+    var b = document.querySelector("#casting input:checked").value;
+    if (b.localeCompare("mono") === 0) {
+        propagateOneToOne(index);
+    } else if (b.localeCompare("multi") === 0){
+        propagateOneToAll(index);
+    } else if (b.localeCompare("monoToEdge") === 0){
+        propagateMonoToEdge(index, true, 3);
+    } else if (b.localeCompare("monoToEdgeWithSpine") === 0){
+        propagateMonoToEdgeWithSpine(index, true, 3);
+    } else if (b.localeCompare("automation") === 0){
+        startAutomation(index);
+    } else {
+        console.log("UNIMPLEMENTED")
+    }
 }
 
 var stopGen = function () {
-  if (generating === false) {
-    generating = true;
-    //document.getElementById('generating').value = "stop simulation";
-  }else{
-    generating = false;
-    //document.getElementById('generating').value = "start simulation";
-  }
+    if (generating === false) {
+        generating = true;
+        //document.getElementById('generating').value = "stop simulation";
+    }else{
+        generating = false;
+        //document.getElementById('generating').value = "start simulation";
+    }
 }
 
 var stop = function () {
-  if (paused === false) {
-    paused = true;
-    force.stop();
-    document.getElementById('plause').value = "play";
-  }else{
-    paused = false;
-    force.start();
-    document.getElementById('plause').value = "pause";
-  }
+    if (paused === false) {
+        paused = true;
+        force.stop();
+        document.getElementById('plause').value = "play";
+    }else{
+        paused = false;
+        force.start();
+        document.getElementById('plause').value = "pause";
+    }
 }
 
 // INTERFACE }}}
@@ -272,49 +258,52 @@ var stop = function () {
 // TODO: figure out why this is necessary to
 //       do so frequently ...
 function updateColors () {
-  vis.selectAll("circle.node")
+    vis.selectAll("circle.node")
+    .style("stroke", function(d) {
+        return colors[d.state];
+    })
     .style("fill", function(d) {
-      return colors[d.type][d.state];
+        return colors[d.type];
     });
 }
 
 function highlightSelf (nodeOfInterestIndex) {
-  nodes[nodeOfInterestIndex].state = "interest";
-  updateColors();
+    nodes[nodeOfInterestIndex].type = "head";
+    updateColors();
 }
 
 function highlightNeighboursIncludingSelf  (nodeOfInterestIndex) {
-  var index = nodeOfInterestIndex;
-  removeHighlights();
-  highlightSelf(nodeOfInterestIndex);
-  highlightNeighbours(nodeOfInterestIndex);
-  updateColors();
+    var index = nodeOfInterestIndex;
+    removeHighlights();
+    highlightSelf(nodeOfInterestIndex);
+    highlightNeighbours(nodeOfInterestIndex);
+    updateColors();
 }
 
 function toggleMouseHighlighting () {
-  showingMouseHighlights = showingMouseHighlights ? false : true;
-  document.getElementById('toggleMouseHighlighting').value = showingMouseHighlights ? 'remove mouse highlighting' : 'engage mouse highlighting';
+    showingMouseHighlights = showingMouseHighlights ? false : true;
+    document.getElementById('toggleMouseHighlighting').value = showingMouseHighlights ? 'remove mouse highlighting' : 'engage mouse highlighting';
 
-  if (!showingMouseHighlights) {
-    removeHighlights();
-  }
+    if (!showingMouseHighlights) {
+        removeHighlights();
+    }
 }
 
 function removeHighlights () {
-  _.each(nodes, function (d, i) {
-    //if (d.state === "selected") {
-      nodes[i].state = "deselected";
-    //}
-  });
-  updateColors();
+    _.each(nodes, function (d, i) {
+        //if (d.state === "selected") {
+        nodes[i].state = "deselected";
+        //}
+    });
+    updateColors();
 }
 
 function highlightNeighbours (nodeOfInterestIndex) {
-  var neighbours = generateAllNeighbours()[nodeOfInterestIndex];
-  _.each(neighbours, function (i) {
-    nodes[i].state = "selected";
-  });
-  updateColors();
+    var neighbours = generateAllNeighbours()[nodeOfInterestIndex];
+    _.each(neighbours, function (i) {
+        nodes[i].state = "selected";
+    });
+    updateColors();
 }
 
 // CHANGING STATE }}}
@@ -322,105 +311,105 @@ function highlightNeighbours (nodeOfInterestIndex) {
 //{{{ PROPAGATING
 
 function propagateOneToAll (index) {
-  neighbours = generateAllNeighbours()[index];
-  nbs = _.filter(neighbours, function (d) { /*console.log(nodes[d].state);*/ return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
+    var neighbours = generateAllNeighbours()[index];
+    var nbs = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
 
-  highlightSelf(index);
-  if (!paused && nbs.length > 0) {
-    _.forEach(nbs, function (d,i) {
-      setTimeout(propagateOneToAll, generationPeriod, d);
-    });
-  }
+    highlightSelf(index);
+    if (!paused && nbs.length > 0) {
+        _.forEach(nbs, function (d,i) {
+            setTimeout(propagateOneToAll, generationPeriod, d);
+        });
+    }
 }
 
 function propagateOneToOne (index) {
-  neighbours = generateAllNeighbours()[index];
-  nbs = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
-  rndm = _.random(0, nbs.length - 1);
-  highlightSelf(index);
-  if (!paused && nbs.length > 0) {
-    setTimeout(propagateOneToOne, generationPeriod, [nbs[rndm]]);
-  }
+    var neighbours = generateAllNeighbours()[index];
+    var nbs = _.filter(neighbours, function (d) { return nodes[d].state.localeCompare("deselected") === 0 || nodes[d].state.localeCompare("selected") === 0; });
+    var rndm = _.random(0, nbs.length - 1);
+    highlightSelf(index);
+    if (!paused && nbs.length > 0) {
+        setTimeout(propagateOneToOne, generationPeriod, [nbs[rndm]]);
+    }
 }
 
 function propagateMonoToEdgeWithSpine (index, startGrowingThere, howManyToGrow) {
-  neighbours = generateAllNeighbours()[index];
-  if (checkIfEdge(index)) {
-    nodes[index].type = "head";
-    updateColors();
-    headParent = index;
-    //nodes[headParent].fixed = true;
-    if (startGrowingThere) {
-      startAutomation(index);
-      splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
-      //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
+    var neighbours = generateAllNeighbours()[index];
+    if (checkIfEdge(index)) {
+        nodes[index].type = "head";
+        updateColors();
+        headParent = index;
+        //nodes[headParent].fixed = true;
+        if (startGrowingThere) {
+            startAutomation(index);
+            splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
+            //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
+        }
+    } else if (!paused && neighbours.length > 0) {
+        var rndm = _.random(0, neighbours.length - 1);
+        highlightSelf(index);
+        setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
     }
-  } else if (!paused && neighbours.length > 0) {
-    rndm = _.random(0, neighbours.length - 1);
-    highlightSelf(index);
-    setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
-  }
 }
 
 function propagateMonoToEdge (index, startGrowingThere, howManyToGrow) {
-  neighbours = generateAllNeighbours()[index];
-  if (checkIfEdge(index)) {
-    nodes[index].type = "head";
-    updateColors();
-    headParent = index;
-    //nodes[headParent].fixed = true;
-    if (startGrowingThere) {
-      splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
-      //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
+    var neighbours = generateAllNeighbours()[index];
+    if (checkIfEdge(index)) {
+        nodes[index].type = "head";
+        updateColors();
+        headParent = index;
+        //nodes[headParent].fixed = true;
+        if (startGrowingThere) {
+            splitNodeAmountOfTimesHead(index, howManyToGrow, "head");
+            //splitNodeAmountOfTimesHead(index, howManyToGrow, "spine");
+        }
+    } else if (!paused && neighbours.length > 0) {
+        var rndm = _.random(0, neighbours.length - 1);
+        highlightSelf(index);
+        setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
     }
-  } else if (!paused && neighbours.length > 0) {
-    rndm = _.random(0, neighbours.length - 1);
-    highlightSelf(index);
-    setTimeout(propagateMonoToEdge, generationPeriod, neighbours[rndm], startGrowingThere, howManyToGrow);
-  }
 }
 
 function automateIteration() {
-  var allNeighbours = generateAllNeighbours();
-  for (nod in nodes) {
-    if (nodes[nod].type.localeCompare("head") === 0) { continue; } // don't affect head nodes
-    var r = _.some(allNeighbours[nod], function (d) {
-          return nodes[d].type.localeCompare("right") === 0;
+    var allNeighbours = generateAllNeighbours();
+    for (nod in nodes) {
+        if (nodes[nod].type.localeCompare("head") === 0) { continue; } // don't affect head nodes
+        var r = _.some(allNeighbours[nod], function (d) {
+            return nodes[d].type.localeCompare("right") === 0;
         }); // if it has a right neighbour
-    var l = _.some(allNeighbours[nod], function (d) {
-          return nodes[d].type.localeCompare("left") === 0;
-        }); // if it has a left neighbour
+            var l = _.some(allNeighbours[nod], function (d) {
+                return nodes[d].type.localeCompare("left") === 0;
+            }); // if it has a left neighbour
 
-    if (r && l) {
-      /*it is touching right and left*/
-      nodes[nod].type = "spine";
-    } else if (r) {
-        nodes[nod].type = "right";//make it right
-    } else if (l) {
-        nodes[nod].type = "left";//make it left
+                if (r && l) {
+                    /*it is touching right and left*/
+                        nodes[nod].type = "spine";
+                } else if (r) {
+                    nodes[nod].type = "right";//make it right
+                } else if (l) {
+                    nodes[nod].type = "left";//make it left
+                }
     }
-  }
-  updateColors();
+    updateColors();
 
-  // TODO: if any are still of type "normal", keep iterating
+    // TODO: if any are still of type "normal", keep iterating
 }
 
 function startAutomation(index) {
-  var neighbours = generateAllNeighbours()[index];
+    var neighbours = generateAllNeighbours()[index];
 
-  var edgeNeighbours = _.filter(neighbours, function (d) {
-    return checkIfEdge(d);
-  });
+    var edgeNeighbours = _.filter(neighbours, function (d) {
+        return checkIfEdge(d);
+    });
 
-  if(edgeNeighbours.length < 2) {
-    alert("Please select a cell with more than one edge cell");
-    return;
-  }
+    if(edgeNeighbours.length < 2) {
+        alert("Please select a cell with more than one edge cell");
+        return;
+    }
 
-  nodes[edgeNeighbours[0]].type = "left";
-  nodes[edgeNeighbours[1]].type = "right";
+    nodes[edgeNeighbours[0]].type = "left";
+    nodes[edgeNeighbours[1]].type = "right";
 
-  automateIteration();
+    automateIteration();
 }
 
 // PROPAGATING }}}
@@ -428,131 +417,131 @@ function startAutomation(index) {
 //{{{ ADDING AND REMOVING NODES
 
 function copyLinks(ln) {
-  var lnew = []
-  _.each(ln, function (l) {
-    lnew.push({source:l.source, target:l.target});
-  });
-  return lnew;
+    var lnew = []
+    _.each(ln, function (l) {
+        lnew.push({source:l.source, target:l.target});
+    });
+    return lnew;
 }
 
 var addNode = function (indexOfNodeToMultiply, type, state) {
-  if (!state) {
-    var state = "deselected";
-  }
-  // TODO:
-  // - if indexOfNodeToMultiply is a head node,
-  //   then the new node should link to it, and
-  //   also be a head node
-  //force.links(copyLinks( links ));
-  if (paused === false){
-    var rad = Math.random() * Math.PI * 2;
-    var xoffset = Math.cos(rad) * nucleusradius;
-    var yoffset = Math.sin(rad) * nucleusradius;
+    if (!state) {
+        var state = "deselected";
+    }
+    // TODO:
+    // - if indexOfNodeToMultiply is a head node,
+    //   then the new node should link to it, and
+    //   also be a head node
+    //force.links(copyLinks( links ));
+    if (paused === false){
+        var rad = Math.random() * Math.PI * 2;
+        var xoffset = Math.cos(rad) * nucleusradius;
+        var yoffset = Math.sin(rad) * nucleusradius;
 
-    // spawn a new node nucleusradius away from the previous node in a random direction.
-    nodes.push({ // push a new node at the location of the previous one
-      x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
-      y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
-      type: type,
-      state: state,
-    }); //{id: ~~(Math.random())});
+        // spawn a new node nucleusradius away from the previous node in a random direction.
+        nodes.push({ // push a new node at the location of the previous one
+            x: (incrementer === -1) ? foci.x : nodes[indexOfNodeToMultiply].x + xoffset,
+            y: (incrementer === -1) ? foci.y : nodes[indexOfNodeToMultiply].y + yoffset,
+            type: type,
+            state: state,
+        }); //{id: ~~(Math.random())});
 
-    incrementer++;
-    force.start();
-  }
+        incrementer++;
+        force.start();
+    }
 };
 
 var splitNodeAmountOfTimesHead = function (indexOfNodeToMultiply, howManyTimes, type) {
-  var i = howManyTimes;
-  //nodes[indexOfNodeToMultiply].type = "head";
-  while (i >= 0) {
-    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, type);
-    i = i - 1;
-  }
+    var i = howManyTimes;
+    //nodes[indexOfNodeToMultiply].type = "head";
+    while (i >= 0) {
+        setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, type);
+        i = i - 1;
+    }
 }
 
 function addLink(nodChild, nodParent) {
-  //links.push({source: nodChild,
-              //target: nodParent});
-  //force.links(copyLinks(links));
-  //force.start();
+    //links.push({source: nodChild,
+    //target: nodParent});
+    //force.links(copyLinks(links));
+    //force.start();
 }
 
 function splitAllOfTypeWithLink (type) {
-  _.each(nodes, function (nod, i) {
-    if (nod.type === type) {
-      addNode(i, "normal");
-      nodes[nodes.length - 1].type = type;
-      addLink(i, nodes.length - 1);
-    }
-  });
+    _.each(nodes, function (nod, i) {
+        if (nod.type === type) {
+            addNode(i, "normal");
+            nodes[nodes.length - 1].type = type;
+            addLink(i, nodes.length - 1);
+        }
+    });
 }
 
 var splitNodeAmountOfTimes = function (indexOfNodeToMultiply, howManyTimes) {
-  var i = howManyTimes;
-  while (i >= 0) {
-    setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, "normal");
-    i = i - 1;
-  }
+    var i = howManyTimes;
+    while (i >= 0) {
+        setTimeout(addNode, generationPeriod * i / 2, indexOfNodeToMultiply, "normal");
+        i = i - 1;
+    }
 }
 
 var addNewNodeToEndOfList = function () {
-  addNode(incrementer, "normal");
+    addNode(incrementer, "normal");
 }
 
 var splitAllNodesA_AA = function () {
-  // split every node into two nodes
-  var i = 0;
-  incNow = incrementer + 1;
+    // split every node into two nodes
+    var i = 0;
+    incNow = incrementer + 1;
 
-  //for every node, make a new node
-  for (i = 0; i < incNow; i++) {
-    addNode(i, nodes[i].type);
-  }
+    //for every node, make a new node
+    for (i = 0; i < incNow; i++) {
+        addNode(i, nodes[i].type);
+    }
 };
 
 var splitAllNodesB_BA = function () {
-  // split every node into two nodes
-  var i = 0;
-  incNow = incrementer + 1;
+    // split every node into two nodes
+    var i = 0;
+    incNow = incrementer + 1;
 
-  //for every node, make a new node
-  for (i = 0; i < incNow; i++) {
-    addNode(i, "normal");
-  }
+    //for every node, make a new node
+    for (i = 0; i < incNow; i++) {
+        addNode(i, "head");
+    }
 };
 
 var splitAllNodesA_AAwithState = function () {
-  // split every node into two nodes
-  var i = 0;
-  incNow = incrementer + 1;
+    // split every node into two nodes
+    var i = 0;
+    incNow = incrementer + 1;
 
-  //for every node, make a new node
-  for (i = 0; i < incNow; i++) {
-    addNode(i, nodes[i].type, nodes[i].state);
-  }
+    //for every node, make a new node
+    for (i = 0; i < incNow; i++) {
+        addNode(i, nodes[i].type, nodes[i].state);
+    }
 };
 
 var splitAllNodesB_BAwithState = function () {
-  // split every node into two nodes
-  var i = 0;
-  incNow = incrementer + 1;
+    // split every node into two nodes
+    var i = 0;
+    incNow = incrementer + 1;
 
-  //for every node, make a new node
-  for (i = 0; i < incNow; i++) {
-    var toChange = nodes[i].type.localeCompare("left") === 0 ||
-                   nodes[i].type.localeCompare("right") === 0 ||
-                   nodes[i].type.localeCompare("normal") === 0;
-    if (toChange) {
-      addNode(i, nodes[i].type);
-    } else {
-      addNode(i, nodes[i].type, nodes[i].state);
+    //for every node, make a new node
+    for (i = 0; i < incNow; i++) {
+        var toChange = nodes[i].type.localeCompare("left") === 0 ||
+            nodes[i].type.localeCompare("right") === 0 ||
+            nodes[i].type.localeCompare("normal") === 0;
+        if (toChange) {
+            addNode(i, nodes[i].type);
+        } else {
+            addNode(i, nodes[i].type, nodes[i].state);
+        }
     }
-  }
 };
 
 var addNodeIfGen = function () {
-  if (generating) { addNewNodeToEndOfList(); }
+    if (generating) { addNewNodeToEndOfList(); }
 }
 
 // ADDING AND REMOVING NODES }}}
@@ -560,77 +549,77 @@ var addNodeIfGen = function () {
 //{{{ HELPER METHODS
 
 function generateAllNeighbours () {
-  var tmpN = d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }));
-  var tmpN2 = [];
-  _.each(tmpN, function (d, i) {
-      tmpN2.push(_.filter(d, function (x) { return closeNeighbours(nodes[i], nodes[x]); }));
-  });
-  // TODO: better idea:
-  // - determine if all neighbours connect in a ring.
-  // - this is in order to find edge nodes.
-  return tmpN2;
+    var tmpN = d3.get_delaunay_neighbours(_.map(nodes, function (d) { return [Math.round(d.x), Math.round(d.y)]; }));
+    var tmpN2 = [];
+    _.each(tmpN, function (d, i) {
+        tmpN2.push(_.filter(d, function (x) { return closeNeighbours(nodes[i], nodes[x]); }));
+    });
+    // TODO: better idea:
+    // - determine if all neighbours connect in a ring.
+    // - this is in order to find edge nodes.
+    return tmpN2;
 }
 
 function countNeighbours (index) {
-  return generateAllNeighbours()[index].length;
+    return generateAllNeighbours()[index].length;
 }
 
 function checkIfEdge (index) {
-  //Not a perfect method:
-  // There are occasional edge nodes which are NOT considered to be edge nodes,
-  // but it will work fine for us.
-  // There are also occasional inner nodes which ARE considered to be edge nodes,
-  // but it's rare enough that it should be okay.
+    //Not a perfect method:
+    // There are occasional edge nodes which are NOT considered to be edge nodes,
+    // but it will work fine for us.
+    // There are also occasional inner nodes which ARE considered to be edge nodes,
+    // but it's rare enough that it should be okay.
 
-  // If we have a cycle that means we are NOT an edge node.
-  return !findCycle(index)
-}
+    // If we have a cycle that means we are NOT an edge node.
+    return !findCycle(index)
+    }
 
-function findCycle (index) {
-  var neighbours = generateAllNeighbours();
-  var neighboursOfIndex = neighbours[index];
+    function findCycle (index) {
+    var neighbours = generateAllNeighbours();
+    var neighboursOfIndex = neighbours[index];
 
-  // there is only one node
-  if (neighboursOfIndex.length == 0) {
+    // there is only one node
+    if (neighboursOfIndex.length == 0) {
     return false;
-  }
+    }
 
-  // the neighbours' neighbours, which only include the neighbours.
-  // AKA we are only considering nodes which are neighbours of index.
-  var filteredNeighbours = _.map(neighbours, function (nei) { return _.filter(nei, function (nod) {
-    return neighboursOfIndex.indexOf(nod) > -1;
-  })});
+    // the neighbours' neighbours, which only include the neighbours.
+    // AKA we are only considering nodes which are neighbours of index.
+    var filteredNeighbours = _.map(neighbours, function (nei) { return _.filter(nei, function (nod) {
+        return neighboursOfIndex.indexOf(nod) > -1;
+    })});
 
-  var previousNode = -1;
-  var currentNode = neighboursOfIndex[0];
-  do {
-    var fil = _.filter(filteredNeighbours[currentNode], function (nod) { return nod != previousNode; });
-    if (fil.length == 0) return false;
-    previousNode = currentNode;
-    currentNode = fil[0];
-  } while (currentNode != neighboursOfIndex[0])
+    var previousNode = -1;
+    var currentNode = neighboursOfIndex[0];
+    do {
+        var fil = _.filter(filteredNeighbours[currentNode], function (nod) { return nod != previousNode; });
+        if (fil.length == 0) return false;
+        previousNode = currentNode;
+        currentNode = fil[0];
+    } while (currentNode != neighboursOfIndex[0])
 
-  return true;
+        return true;
 
-  //var currentNode = neighboursOfIndex[0];
-  //var previousNode = -1;
+        //var currentNode = neighboursOfIndex[0];
+        //var previousNode = -1;
 
-  //while (currentNode != neighboursOfIndex[0]) {
-  //}
+        //while (currentNode != neighboursOfIndex[0]) {
+        //}
 
-  //return true;
+        //return true;
 }
 
 function distanceBetweenTwoPoints(x1, x2, y1, y2) {
-  return Math.sqrt( Math.pow((x1-x2), 2) + Math.pow((y1-y2), 2));
+    return Math.sqrt( Math.pow((x1-x2), 2) + Math.pow((y1-y2), 2));
 }
 
 function distanceBetweenTwoNodes(n1, n2) {
-  return distanceBetweenTwoPoints(n1.x, n2.x, n1.y, n2.y)
+    return distanceBetweenTwoPoints(n1.x, n2.x, n1.y, n2.y)
 }
 
 function closeNeighbours(n1, n2) {
-  return distanceBetweenTwoNodes(n1, n2) <= cellRadius*2;
+    return distanceBetweenTwoNodes(n1, n2) <= cellRadius*2;
 }
 
 // HELPER METHODS }}}
